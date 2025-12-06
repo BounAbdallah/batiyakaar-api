@@ -1,0 +1,810 @@
+{
+    "info": {
+        "name": "Bâti Yakaar API",
+        "description": "API complète pour la plateforme Bâti Yakaar - Gestion de construction et location immobilière",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+        "_exporter_id": "batiyakaar"
+    },
+    "auth": {
+        "type": "bearer",
+        "bearer": [
+            {
+                "key": "token",
+                "value": "{{access_token}}",
+                "type": "string"
+            }
+        ]
+    },
+    "variable": [
+        {
+            "key": "base_url",
+            "value": "http://localhost:8000/api/v1",
+            "type": "string"
+        },
+        {
+            "key": "access_token",
+            "value": "",
+            "type": "string"
+        }
+    ],
+    "item": [
+        {
+            "name": "Authentication",
+            "item": [
+                {
+                    "name": "Register",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"nom\": \"Test\",\n  \"prenom\": \"User\",\n  \"email\": \"test@example.com\",\n  \"telephone\": \"+221771234567\",\n  \"password\": \"password123\",\n  \"password_confirmation\": \"password123\",\n  \"user_type\": \"bailleur\",\n  \"pays\": \"France\",\n  \"adresse_diaspora\": \"Paris, France\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/auth/register",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "auth",
+                                "register"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Login",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "if (pm.response.code === 200) {",
+                                    "    var jsonData = pm.response.json();",
+                                    "    pm.collectionVariables.set(\"access_token\", jsonData.data.token);",
+                                    "}"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"email\": \"amadou.diop@diaspora.sn\",\n  \"password\": \"password123\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/auth/login",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "auth",
+                                "login"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get User",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/auth/user",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "auth",
+                                "user"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Logout",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/auth/logout",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "auth",
+                                "logout"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Projets Construction",
+            "item": [
+                {
+                    "name": "List Projets",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/projets?statut=en_cours",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "projets"
+                            ],
+                            "query": [
+                                {
+                                    "key": "statut",
+                                    "value": "en_cours"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Create Projet",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"bailleur_id\": 1,\n  \"titre\": \"Construction Villa Almadies\",\n  \"description\": \"Villa moderne 4 chambres\",\n  \"adresse\": \"Almadies, Dakar\",\n  \"budget_total\": 50000000,\n  \"date_debut\": \"2024-01-15\",\n  \"date_fin_prevue\": \"2024-12-31\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/projets",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "projets"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get Projet",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/projets/1",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "projets",
+                                "1"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Update Projet",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"statut\": \"en_cours\",\n  \"pourcentage_avancement\": 25\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/projets/1",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "projets",
+                                "1"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Delete Projet",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/projets/1",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "projets",
+                                "1"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Biens",
+            "item": [
+                {
+                    "name": "List Biens",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/biens?statut=disponible&type=appartement",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "biens"
+                            ],
+                            "query": [
+                                {
+                                    "key": "statut",
+                                    "value": "disponible"
+                                },
+                                {
+                                    "key": "type",
+                                    "value": "appartement"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Create Bien",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"bailleur_id\": 1,\n  \"agence_id\": 1,\n  \"reference\": \"BIEN-2024-001\",\n  \"adresse\": \"Mermoz, Dakar\",\n  \"type\": \"appartement\",\n  \"nombre_pieces\": 3,\n  \"surface\": 85.5,\n  \"loyer_mensuel\": 350000\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/biens",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "biens"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Baux",
+            "item": [
+                {
+                    "name": "List Baux",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/baux?statut=actif",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "baux"
+                            ],
+                            "query": [
+                                {
+                                    "key": "statut",
+                                    "value": "actif"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Create Bail",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"bien_id\": 1,\n  \"locataire_id\": 1,\n  \"agence_id\": 1,\n  \"date_debut\": \"2024-01-01\",\n  \"date_fin\": \"2024-12-31\",\n  \"loyer_mensuel\": 350000,\n  \"caution\": 700000\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/baux",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "baux"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Paiements Loyer",
+            "item": [
+                {
+                    "name": "List Paiements",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/paiements-loyer?statut=paye",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "paiements-loyer"
+                            ],
+                            "query": [
+                                {
+                                    "key": "statut",
+                                    "value": "paye"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Create Paiement (Auto-Ventilation)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"bail_id\": 1,\n  \"montant\": 350000,\n  \"date_paiement\": \"2024-01-05\",\n  \"date_prevue\": \"2024-01-01\",\n  \"mode_paiement\": \"mobile_money\",\n  \"reference_transaction\": \"OM123456789\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/paiements-loyer",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "paiements-loyer"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Incidents",
+            "item": [
+                {
+                    "name": "List Incidents",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/incidents?priorite=haute",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "incidents"
+                            ],
+                            "query": [
+                                {
+                                    "key": "priorite",
+                                    "value": "haute"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Create Incident",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"bail_id\": 1,\n  \"locataire_id\": 1,\n  \"titre\": \"Fuite d'eau salle de bain\",\n  \"description\": \"Fuite importante au niveau du lavabo\",\n  \"categorie\": \"plomberie\",\n  \"priorite\": \"haute\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/incidents",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "incidents"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Assign Incident",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"technicien_id\": 1\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/incidents/1/assign",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "incidents",
+                                "1",
+                                "assign"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Resolve Incident",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/incidents/1/resolve",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "incidents",
+                                "1",
+                                "resolve"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Produits",
+            "item": [
+                {
+                    "name": "List Produits",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/produits?en_stock=true&categorie=ciment",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "produits"
+                            ],
+                            "query": [
+                                {
+                                    "key": "en_stock",
+                                    "value": "true"
+                                },
+                                {
+                                    "key": "categorie",
+                                    "value": "ciment"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Update Stock",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"stock_disponible\": 500\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/produits/1/stock",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "produits",
+                                "1",
+                                "stock"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Commandes",
+            "item": [
+                {
+                    "name": "Create Commande",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"bailleur_id\": 1,\n  \"projet_construction_id\": 1,\n  \"lignes\": [\n    {\n      \"produit_id\": 1,\n      \"quantite\": 100\n    },\n    {\n      \"produit_id\": 2,\n      \"quantite\": 50\n    }\n  ]\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/commandes",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "commandes"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "User",
+            "item": [
+                {
+                    "name": "Get Profile",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/user/profile",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "user",
+                                "profile"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Update Profile",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"nom\": \"Diop\",\n  \"prenom\": \"Amadou\",\n  \"telephone\": \"+33612345678\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/user/profile",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "user",
+                                "profile"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get Notifications",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/user/notifications",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "user",
+                                "notifications"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Agence Dashboard",
+            "item": [
+                {
+                    "name": "Get Dashboard Stats",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/agence/dashboard",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "agence",
+                                "dashboard"
+                            ]
+                        }
+                    }
+                }
+            ]
+        }
+    ]
+}
