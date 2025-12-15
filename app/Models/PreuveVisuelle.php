@@ -9,6 +9,8 @@ class PreuveVisuelle extends Model
 {
     use HasFactory;
 
+    protected $table = 'preuves_visuelles';
+
     protected $fillable = [
         'etape_id',
         'entrepreneur_id',

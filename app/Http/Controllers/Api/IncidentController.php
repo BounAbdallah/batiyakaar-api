@@ -3,16 +3,32 @@
 namespace App\Http\Controllers\Api;
 
 use App\Models\Incident;
+use App\Models\Notification;
 use Illuminate\Http\Request;
 
 class IncidentController extends Controller
 {
     /**
-     * Display a listing of incidents
+     * Display a listing of incidents - filtered by role
      */
     public function index(Request $request)
     {
+        $user = $request->user();
         $query = Incident::query();
+
+        // Filter by user role - automatic restriction
+        if ($user->user_type === 'agence' && $user->agence) {
+            $query->whereHas('bail', function ($q) use ($user) {
+                $q->where('agence_id', $user->agence->id);
+            });
+        } elseif ($user->user_type === 'bailleur' && $user->bailleur) {
+            $query->whereHas('bail.bien', function ($q) use ($user) {
+                $q->where('bailleur_id', $user->bailleur->id);
+            });
+        } elseif ($user->user_type === 'locataire' && $user->locataire) {
+            $query->where('locataire_id', $user->locataire->id);
+        }
+        // Admin sees all incidents
 
         // Filters
         if ($request->has('statut')) {
@@ -25,10 +41,6 @@ class IncidentController extends Controller
 
         if ($request->has('bail_id')) {
             $query->where('bail_id', $request->bail_id);
-        }
-
-        if ($request->has('locataire_id')) {
-            $query->where('locataire_id', $request->locataire_id);
         }
 
         // Include relationships
@@ -66,10 +78,47 @@ class IncidentController extends Controller
 
         $incident = Incident::create($validated);
 
+        // Load relationships for notification
+        $incident->load(['bail.bien.bailleur.user', 'bail.agence.user', 'locataire.user']);
+
+        // Notify agency about new incident
+        if ($incident->bail && $incident->bail->agence && $incident->bail->agence->user) {
+            Notification::create([
+                'user_id' => $incident->bail->agence->user->id,
+                'titre' => 'Nouvel incident signalé',
+                'message' => "Un incident '{$incident->titre}' (priorité: {$incident->priorite}) a été signalé par {$incident->locataire->user->prenom} {$incident->locataire->user->nom} pour le bien {$incident->bail->bien->reference}.",
+                'type' => 'incident',
+                'date_envoi' => now(),
+                'lue' => false,
+                'metadata' => [
+                    'incident_id' => $incident->id,
+                    'bail_id' => $incident->bail_id,
+                    'bien_id' => $incident->bail->bien_id,
+                    'priorite' => $incident->priorite
+                ]
+            ]);
+        }
+
+        // Notify landlord about new incident
+        if ($incident->bail && $incident->bail->bien && $incident->bail->bien->bailleur && $incident->bail->bien->bailleur->user) {
+            Notification::create([
+                'user_id' => $incident->bail->bien->bailleur->user->id,
+                'titre' => 'Nouvel incident sur votre bien',
+                'message' => "Un incident '{$incident->titre}' a été signalé pour votre bien {$incident->bail->bien->reference}.",
+                'type' => 'incident',
+                'date_envoi' => now(),
+                'lue' => false,
+                'metadata' => [
+                    'incident_id' => $incident->id,
+                    'bien_id' => $incident->bail->bien_id
+                ]
+            ]);
+        }
+
         return response()->json([
             'success' => true,
             'message' => 'Incident créé avec succès',
-            'data' => $incident->load(['bail.bien', 'locataire.user'])
+            'data' => $incident
         ], 201);
     }
 
@@ -80,7 +129,7 @@ class IncidentController extends Controller
     {
         $incident = Incident::with([
             'bail.bien.bailleur.user',
-            'bail.agence.user',
+            'bail.agence',
             'locataire.user',
             'technicien'
         ])->findOrFail($id);

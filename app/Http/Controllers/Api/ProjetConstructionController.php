@@ -12,7 +12,16 @@ class ProjetConstructionController extends Controller
      */
     public function index(Request $request)
     {
+        $user = auth()->user();
         $query = ProjetConstruction::query();
+
+        // Scope: Own projects or Assigned projects
+        $query->where(function ($q) use ($user) {
+            $q->where('bailleur_id', $user->id)
+                ->orWhereHas('partiesPrenantes', function ($sq) use ($user) {
+                    $sq->where('user_id', $user->id);
+                });
+        });
 
         // Filters
         if ($request->has('statut')) {
@@ -64,10 +73,18 @@ class ProjetConstructionController extends Controller
 
         $projet = ProjetConstruction::create($validated);
 
+        // Auto-create associated Chantier
+        $projet->chantier()->create([
+            'localisation' => $validated['adresse'],
+            // Geocoding can be implemented here later
+            'latitude' => 14.433, // Default fallback
+            'longitude' => -17.016,
+        ]);
+
         return response()->json([
             'success' => true,
             'message' => 'Projet créé avec succès',
-            'data' => $projet->load('bailleur.user')
+            'data' => $projet->load(['bailleur.user', 'chantier'])
         ], 201);
     }
 
@@ -76,20 +93,38 @@ class ProjetConstructionController extends Controller
      */
     public function show(string $id)
     {
-        $projet = ProjetConstruction::with([
-            'bailleur.user',
-            'chantier.etapes.preuvesVisuelles',
-            'paiementsEscrow.entrepreneur.user',
-            'partiesPrenantes.user',
-            'rapports',
-            'commandes',
-            'bien'
-        ])->findOrFail($id);
+        try {
+            $projet = ProjetConstruction::with([
+                'bailleur.user',
+                'chantier.etapes.preuvesVisuelles',
+                'paiementsEscrow.entrepreneur.user',
+                'partiesPrenantes.user',
+                'rapports',
+                'commandes',
+                'bien'
+            ])->findOrFail($id);
 
-        return response()->json([
-            'success' => true,
-            'data' => $projet
-        ]);
+            // Self-healing: Ensure Chantier exists for legacy projects
+            if (!$projet->chantier) {
+                $projet->chantier()->create([
+                    'localisation' => $projet->adresse,
+                    'latitude' => 14.433,
+                    'longitude' => -17.016,
+                ]);
+                $projet->load('chantier');
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => $projet
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ], 500);
+        }
     }
 
     /**

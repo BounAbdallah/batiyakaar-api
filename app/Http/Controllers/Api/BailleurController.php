@@ -1,0 +1,235 @@
+<?php
+
+namespace App\Http\Controllers\Api;
+
+use App\Http\Controllers\Controller;
+use App\Models\Bailleur;
+use App\Models\User;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rules;
+
+class BailleurController extends Controller
+{
+    /**
+     * Display a listing of the resource.
+     */
+    public function index(Request $request)
+    {
+        $user = \Illuminate\Support\Facades\Auth::user();
+        $query = Bailleur::with('user');
+
+        // If Agency, only show Bailleurs who have properties managed by this agency
+        if ($user->user_type === 'agence') {
+            $agenceId = $user->agence->id;
+            $query->whereHas('biens', function ($q) use ($agenceId) {
+                $q->where('agence_id', $agenceId);
+            });
+        }
+
+        if ($request->has('search')) {
+            $search = $request->search;
+            $query->whereHas('user', function ($q) use ($search) {
+                $q->where('nom', 'like', "%{$search}%")
+                    ->orWhere('prenom', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%");
+            });
+        }
+
+        // Add counts for cards
+        $query->withCount([
+            'biens',
+            'baux as locataires_count' => function ($q) {
+                // Determine table name or just use 'baux' as confirmed in model
+                $q->where('baux.statut', 'actif');
+            }
+        ]);
+
+        $bailleurs = $query->latest()->paginate(15);
+
+        // Global Stats for the Dashboard
+        $stats = [
+            'total_bailleurs' => $query->count(),
+            'total_biens' => 0,
+            'total_locataires' => 0,
+            'total_revenus' => 0,
+        ];
+
+        if ($user->user_type === 'agence') {
+            $agenceId = $user->agence->id;
+
+            // Re-calculate counts for stats if needed, or use separate queries as before
+            // Total Biens for this agency
+            $stats['total_biens'] = \App\Models\Bien::where('agence_id', $agenceId)->count();
+
+            // Active Tenants (via active leases on agency properties)
+            $stats['total_locataires'] = \App\Models\Bail::whereHas('bien', function ($q) use ($agenceId) {
+                $q->where('agence_id', $agenceId);
+            })->where('statut', 'actif')->count();
+
+            // Total Revenue (Paid rents)
+            $stats['total_revenus'] = \App\Models\PaiementLoyer::whereHas('bail.bien', function ($q) use ($agenceId) {
+                $q->where('agence_id', $agenceId);
+            })->where('statut', 'paye')->sum('montant');
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => $bailleurs,
+            'stats' => $stats
+        ]);
+
+
+    }
+
+    /**
+     * Store a newly created resource in storage.
+     */
+    public function store(Request $request)
+    {
+        $validated = $request->validate([
+            'prenom' => 'required|string|max:255',
+            'nom' => 'required|string|max:255',
+            'email' => 'required|string|email|max:255|unique:users',
+            'telephone' => 'nullable|string|max:20',
+            'pays' => 'required|string|max:100', // Required by DB
+            'adresse_diaspora' => 'nullable|string',
+            'password' => ['required', 'confirmed', Rules\Password::defaults()],
+        ]);
+
+        // Create User
+        $user = User::create([
+            'prenom' => $validated['prenom'],
+            'nom' => $validated['nom'],
+            'email' => $validated['email'],
+            'telephone' => $validated['telephone'] ?? null,
+            'password' => Hash::make($validated['password']),
+            'user_type' => 'bailleur',
+        ]);
+
+        // Create Bailleur Profile
+        $bailleur = Bailleur::create([
+            'user_id' => $user->id,
+            'pays' => $validated['pays'],
+            'adresse_diaspora' => $validated['adresse_diaspora'] ?? null,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Bailleur créé avec succès',
+            'data' => $bailleur->load('user')
+        ], 201);
+    }
+
+    /**
+     * Display the specified resource.
+     */
+    public function show(string $id)
+    {
+        $bailleur = Bailleur::with(['user', 'biens.baux.paiementsLoyer'])->findOrFail($id);
+
+        // Calculate Stats
+        $stats = [];
+
+        // Property counts
+        $stats['total_properties'] = $bailleur->biens->count();
+        $stats['rented_properties'] = $bailleur->biens->where('statut', 'loue')->count();
+        $stats['available_properties'] = $bailleur->biens->where('statut', 'disponible')->count();
+
+        // Active leases
+        $activeLeases = \App\Models\Bail::whereIn('bien_id', $bailleur->biens->pluck('id'))
+            ->where('statut', 'actif')
+            ->get();
+        $stats['active_leases'] = $activeLeases->count();
+        $stats['expected_monthly_revenue'] = $activeLeases->sum('loyer_mensuel');
+
+        // Revenue calculations
+        $allPayments = \App\Models\PaiementLoyer::whereHas('bail.bien', function ($q) use ($bailleur) {
+            $q->where('bailleur_id', $bailleur->id);
+        })->where('statut', 'paye')->get();
+
+        $stats['total_revenue'] = $allPayments->sum('montant');
+        $stats['current_month_revenue'] = $allPayments
+            ->where('date_paiement', '>=', now()->startOfMonth())
+            ->where('date_paiement', '<=', now()->endOfMonth())
+            ->sum('montant');
+
+        // Revenue by month (last 12 months)
+        $revenueByMonth = [];
+        for ($i = 11; $i >= 0; $i--) {
+            $date = now()->subMonths($i);
+            $monthRevenue = $allPayments
+                ->where('date_paiement', '>=', $date->copy()->startOfMonth())
+                ->where('date_paiement', '<=', $date->copy()->endOfMonth())
+                ->sum('montant');
+
+            $revenueByMonth[] = [
+                'month' => $date->format('M Y'),
+                'revenue' => $monthRevenue
+            ];
+        }
+        $stats['revenue_by_month'] = $revenueByMonth;
+
+        // Property distribution
+        $stats['property_distribution'] = [
+            'loue' => $stats['rented_properties'],
+            'disponible' => $stats['available_properties'],
+            'maintenance' => $bailleur->biens->where('statut', 'maintenance')->count()
+        ];
+
+        return response()->json([
+            'success' => true,
+            'data' => $bailleur,
+            'stats' => $stats
+        ]);
+    }
+
+    /**
+     * Update the specified resource in storage.
+     */
+    public function update(Request $request, string $id)
+    {
+        $bailleur = Bailleur::findOrFail($id);
+        $user = $bailleur->user;
+
+        $validated = $request->validate([
+            'prenom' => 'sometimes|string|max:255',
+            'nom' => 'sometimes|string|max:255',
+            'email' => 'sometimes|string|email|max:255|unique:users,email,' . $user->id,
+            'telephone' => 'nullable|string|max:20',
+            'pays' => 'sometimes|string|max:100',
+            'adresse_diaspora' => 'nullable|string',
+        ]);
+
+        if (isset($validated['prenom']) || isset($validated['nom']) || isset($validated['email']) || isset($validated['telephone'])) {
+            $user->update($request->only(['prenom', 'nom', 'email', 'telephone']));
+        }
+
+        if (isset($validated['pays']) || isset($validated['adresse_diaspora'])) {
+            $bailleur->update($request->only(['pays', 'adresse_diaspora']));
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Bailleur mis à jour avec succès',
+            'data' => $bailleur->load('user')
+        ]);
+    }
+
+    /**
+     * Remove the specified resource from storage.
+     */
+    public function destroy(string $id)
+    {
+        $bailleur = Bailleur::findOrFail($id);
+        $user = $bailleur->user;
+
+        $bailleur->delete();
+        $user->delete(); // Optional: delete the user account too? Usually yes for a CRM.
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Bailleur supprimé avec succès'
+        ]);
+    }
+}

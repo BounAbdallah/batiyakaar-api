@@ -9,12 +9,15 @@ class Bail extends Model
 {
     use HasFactory;
 
+    protected $table = 'baux';
+
     protected $fillable = [
         'bien_id',
         'locataire_id',
         'agence_id',
         'date_debut',
         'date_fin',
+        'type_duree',
         'loyer_mensuel',
         'caution',
         'statut',

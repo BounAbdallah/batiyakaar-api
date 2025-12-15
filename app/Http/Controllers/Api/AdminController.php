@@ -1,0 +1,241 @@
+<?php
+
+namespace App\Http\Controllers\Api;
+
+use App\Http\Controllers\Controller;
+use App\Models\User;
+use App\Models\Agence;
+use App\Models\Abonnement;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB; // Import DB facade
+use App\Models\Locataire;
+use App\Models\Bailleur;
+use App\Models\PaiementLoyer;
+use App\Models\Incident;
+use App\Models\Plan;
+
+class AdminController extends Controller
+{
+    public function stats()
+    {
+        $stats = [
+            'users' => [
+                'total' => User::count(),
+                'agences' => User::where('user_type', 'agence')->count(),
+                'bailleurs' => User::where('user_type', 'bailleur')->count(),
+                'locataires' => User::where('user_type', 'locataire')->count(),
+            ],
+            'agencies' => [
+                'total' => Agence::count(),
+                'active_subscriptions' => Abonnement::where('statut', 'actif')->count(),
+            ],
+            'revenue' => [
+                // Simplified calculation based on active subscriptions * price
+                // Ideally this should use a real Transaction model for subscriptions
+                'current_mrr' => Abonnement::where('statut', 'actif')
+                    ->join('plans', 'abonnements.plan_id', '=', 'plans.id')
+                    ->sum('plans.prix_mensuel')
+            ]
+        ];
+
+        return response()->json([
+            'success' => true,
+            'data' => $stats
+        ]);
+    }
+
+    public function agencies(Request $request)
+    {
+        $query = Agence::with(['user', 'abonnement.plan'])
+            ->withCount(['biens', 'baux']); // Assuming relationships exist
+
+        if ($request->has('search')) {
+            $search = $request->search;
+            $query->where('raison_sociale', 'like', "%{$search}%")
+                ->orWhereHas('user', function ($q) use ($search) {
+                    $q->where('email', 'like', "%{$search}%")
+                        ->orWhere('nom', 'like', "%{$search}%");
+                });
+        }
+
+        $agencies = $query->paginate(10);
+
+        return response()->json([
+            'success' => true,
+            'data' => $agencies
+        ]);
+    }
+
+    public function showAgency($id)
+    {
+        $agence = Agence::with(['user', 'abonnement.plan'])->findOrFail($id);
+
+        // Calculate stats using existing relationships and queries
+
+        // Properties (Biens + Immeubles)
+        $propertiesCount = $agence->biens()->count() + $agence->immeubles()->count();
+
+        // Leases
+        $leasesCount = $agence->baux()->count();
+        $activeLeasesCount = $agence->baux()->where('statut', 'actif')->count();
+
+        // Tenants (Distinct locataires linked to agency's leases)
+        // Assuming Bail has locataire_id
+        $tenantsCount = Locataire::whereHas('baux', function ($q) use ($id) {
+            $q->where('agence_id', $id);
+        })->count();
+
+        // Landlords (Distinct bailleurs linked to agency's properties)
+        // Assuming Bien has bailleur_id and agence_id
+        $landlordsCount = Bailleur::whereHas('biens', function ($q) use ($id) {
+            $q->where('agence_id', $id);
+        })->count();
+
+        // Revenue (Sum of payments for agency's leases)
+        $totalRevenue = PaiementLoyer::whereHas('bail', function ($q) use ($id) {
+            $q->where('agence_id', $id);
+        })->where('statut', 'paye')->sum('montant');
+
+        // Incidents (Linked to agency's leases)
+        $incidentsCount = Incident::whereHas('bail', function ($q) use ($id) {
+            $q->where('agence_id', $id);
+        })->count();
+
+        // Security / Sessions
+        // Assuming Sanctum is used and relationship is 'tokens'
+        $lastSeen = $agence->user->tokens()->orderBy('last_used_at', 'desc')->first()->last_used_at ?? $agence->user->updated_at;
+        $deviceCount = $agence->user->tokens()->count();
+
+        $stats = [
+            'properties_count' => $propertiesCount,
+            'tenants_count' => $tenantsCount,
+            'landlords_count' => $landlordsCount,
+            'leases_count' => $leasesCount,
+            'active_leases_count' => $activeLeasesCount,
+            'total_revenue' => $totalRevenue,
+            'last_seen' => $lastSeen,
+            'device_count' => $deviceCount,
+            'db_usage' => [
+                'records_count' => $propertiesCount + $leasesCount + $incidentsCount, // Simplified
+                'approx_size_mb' => round(($propertiesCount + $leasesCount + $incidentsCount) * 0.05, 2) // Fake estimation
+            ]
+        ];
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'agency' => $agence,
+                'stats' => $stats
+            ]
+        ]);
+    }
+
+    // --- Plan Management ---
+
+    public function plans()
+    {
+        $plans = \App\Models\Plan::all();
+        return response()->json(['success' => true, 'data' => $plans]);
+    }
+
+    public function storePlan(Request $request)
+    {
+        $validated = $request->validate([
+            'nom' => 'required|string',
+            'prix_mensuel' => 'required|numeric',
+            'limite_biens' => 'required|integer',
+            'limite_utilisateurs' => 'required|integer',
+            'description' => 'nullable|string',
+        ]);
+
+        $plan = \App\Models\Plan::create($validated);
+
+        return response()->json(['success' => true, 'message' => 'Plan créé', 'data' => $plan]);
+    }
+
+    public function updatePlan(Request $request, $id)
+    {
+        $plan = \App\Models\Plan::findOrFail($id);
+
+        $validated = $request->validate([
+            'nom' => 'string',
+            'prix_mensuel' => 'numeric',
+            'limite_biens' => 'integer',
+            'limite_utilisateurs' => 'integer',
+            'description' => 'nullable|string',
+            'actif' => 'boolean'
+        ]);
+
+        $plan->update($validated);
+
+        return response()->json(['success' => true, 'message' => 'Plan mis à jour', 'data' => $plan]);
+    }
+
+    public function toggleUserStatus($id)
+    {
+        $user = User::findOrFail($id);
+
+        // Prevent banning self if admin
+        if ($user->id === auth()->id()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Impossible de modifier votre propre statut.'
+            ], 403);
+        }
+
+        $user->actif = !$user->actif;
+        $user->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Statut utilisateur mis à jour.',
+            'data' => [
+                'actif' => $user->actif
+            ]
+        ]);
+    }
+
+    public function updateAgencySubscription(Request $request, $id)
+    {
+        $agence = Agence::findOrFail($id);
+
+        $validated = $request->validate([
+            'plan_id' => 'required|exists:plans,id',
+            'statut' => 'required|in:actif,en_attente,suspendu,expire',
+            'duree_mois' => 'nullable|integer|min:1'
+        ]);
+
+        // Find existing or create new
+        $abonnement = Abonnement::where('agence_id', $agence->id)->first();
+
+        if (!$abonnement) {
+            $abonnement = new Abonnement();
+            $abonnement->agence_id = $agence->id;
+            $abonnement->date_debut = now();
+        }
+
+        $abonnement->plan_id = $validated['plan_id'];
+        $abonnement->statut = $validated['statut'];
+
+        // If duration provided, update end date relative to now
+        if (!empty($validated['duree_mois'])) {
+            $abonnement->date_fin = now()->addMonths((int) $validated['duree_mois']);
+        } elseif (!$abonnement->date_fin) {
+            // Default 12 months if new
+            $abonnement->date_fin = now()->addMonths(12);
+        }
+
+        $abonnement->save();
+
+        // If activating, ensure user is active too
+        if ($validated['statut'] === 'actif') {
+            $agence->user->update(['actif' => true]);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Abonnement mis à jour avec succès.',
+            'data' => $abonnement->load('plan')
+        ]);
+    }
+}

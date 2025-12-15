@@ -20,6 +20,9 @@ class User extends Authenticatable
         'prenom',
         'email',
         'telephone',
+        'cin',
+        'date_naissance',
+        'lieu_naissance',
         'password',
         'user_type',
         'actif',
@@ -42,6 +45,7 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'actif' => 'boolean',
+            'date_naissance' => 'date',
         ];
     }
 

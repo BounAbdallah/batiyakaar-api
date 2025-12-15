@@ -13,6 +13,7 @@ class PartiesPrenantes extends Model
         'projet_construction_id',
         'user_id',
         'role',
+        'permissions',
         'date_ajout',
         'actif',
     ];
@@ -22,6 +23,7 @@ class PartiesPrenantes extends Model
         return [
             'date_ajout' => 'datetime',
             'actif' => 'boolean',
+            'permissions' => 'array',
         ];
     }
 

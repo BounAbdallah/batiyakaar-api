@@ -31,6 +31,11 @@ class Bailleur extends Model
         return $this->hasMany(Bien::class);
     }
 
+    public function baux()
+    {
+        return $this->hasManyThrough(Bail::class, Bien::class);
+    }
+
     public function commandes()
     {
         return $this->hasMany(Commande::class);

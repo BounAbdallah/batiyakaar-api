@@ -14,17 +14,21 @@ class PaiementLoyer extends Model
     protected $fillable = [
         'bail_id',
         'montant',
+        'montant_attendu',
         'date_paiement',
         'date_prevue',
         'mode_paiement',
         'statut',
         'reference_transaction',
+        'periode_debut',
+        'periode_fin',
     ];
 
     protected function casts(): array
     {
         return [
             'montant' => 'decimal:2',
+            'montant_attendu' => 'decimal:2',
             'date_paiement' => 'date',
             'date_prevue' => 'date',
         ];
@@ -55,6 +59,16 @@ class PaiementLoyer extends Model
     public function scopePaye($query)
     {
         return $query->where('statut', 'paye');
+    }
+
+    public function scopePartiel($query)
+    {
+        return $query->where('statut', 'partiel');
+    }
+
+    public function scopeImpaye($query)
+    {
+        return $query->where('statut', 'impaye');
     }
 
     public function scopeEnRetard($query)

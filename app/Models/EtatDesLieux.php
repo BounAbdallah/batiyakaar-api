@@ -9,22 +9,21 @@ class EtatDesLieux extends Model
 {
     use HasFactory;
 
-    protected $table = 'etats_des_lieux';
+    protected $table = 'etat_des_lieuxes';
 
     protected $fillable = [
         'bail_id',
         'type',
-        'date',
+        'date_etat_des_lieux',
         'observations',
-        'url_photos',
-        'signature',
+        'documents',
     ];
 
     protected function casts(): array
     {
         return [
-            'date' => 'date',
-            'url_photos' => 'array',
+            'date_etat_des_lieux' => 'date',
+            'documents' => 'array',
         ];
     }
 

@@ -21,6 +21,8 @@ class Bien extends Model
         'surface',
         'loyer_mensuel',
         'statut',
+        'immeuble_id',
+        'etage_id',
     ];
 
     protected function casts(): array
@@ -45,6 +47,16 @@ class Bien extends Model
     public function projetConstruction()
     {
         return $this->belongsTo(ProjetConstruction::class);
+    }
+
+    public function immeuble()
+    {
+        return $this->belongsTo(Immeuble::class);
+    }
+
+    public function etage()
+    {
+        return $this->belongsTo(Etage::class);
     }
 
     public function baux()

@@ -13,8 +13,22 @@ class Agence extends Model
         'user_id',
         'raison_sociale',
         'ninea',
+        'rccm',
         'adresse',
+        'logo',
+        'taux_commission_agence',
+        'taux_commission_plateforme',
     ];
+
+    // Accessors
+    public function getLogoUrlAttribute()
+    {
+        if ($this->logo) {
+            // Use full URL with correct port for dev environment
+            return config('app.url') . ':8000/storage/logos/' . $this->logo;
+        }
+        return null;
+    }
 
     // Relationships
     public function user()
@@ -40,5 +54,9 @@ class Agence extends Model
     public function abonnement()
     {
         return $this->hasOne(Abonnement::class);
+    }
+    public function immeubles()
+    {
+        return $this->hasMany(Immeuble::class);
     }
 }

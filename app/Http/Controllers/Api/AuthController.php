@@ -24,7 +24,7 @@ class AuthController extends Controller
             'nom' => 'required|string|max:255',
             'prenom' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
-            'telephone' => 'required|string|max:20',
+            'telephone' => 'required|string|max:20|unique:users',
             'password' => 'required|string|min:8|confirmed',
             'user_type' => 'required|in:bailleur,agence,entrepreneur,fournisseur,locataire',
 
@@ -36,7 +36,11 @@ class AuthController extends Controller
             'specialite' => 'required_if:user_type,entrepreneur',
             'nom_entreprise' => 'required_if:user_type,fournisseur',
             'profession' => 'required_if:user_type,locataire',
+            'plan_id' => 'nullable|exists:plans,id',
         ]);
+
+        // Determine active status: Agency users are inactive by default
+        $isActive = $request->user_type !== 'agence';
 
         // Create user
         $user = User::create([
@@ -46,8 +50,10 @@ class AuthController extends Controller
             'telephone' => $request->telephone,
             'password' => Hash::make($request->password),
             'user_type' => $request->user_type,
-            'actif' => true,
+            'actif' => $isActive,
         ]);
+
+        $agenceData = null;
 
         // Create type-specific record
         switch ($request->user_type) {
@@ -60,12 +66,34 @@ class AuthController extends Controller
                 break;
 
             case 'agence':
-                Agence::create([
+                $agenceData = Agence::create([
                     'user_id' => $user->id,
                     'raison_sociale' => $request->raison_sociale,
                     'ninea' => $request->ninea,
                     'adresse' => $request->adresse,
                 ]);
+
+                // Notify Admins
+                $admins = User::where('user_type', 'admin')->get();
+                \Illuminate\Support\Facades\Notification::send($admins, new \App\Notifications\NewAgencyRegistered($user, $agenceData));
+
+                // Handle Subscription if plan_id is provided
+                if ($request->has('plan_id')) {
+                    $plan = \App\Models\Plan::find($request->plan_id);
+                    if ($plan) {
+                        \App\Models\Abonnement::create([
+                            'agence_id' => $agenceData->id,
+                            'plan_id' => $plan->id,
+                            'date_debut' => now(),
+                            'date_fin' => now()->addMonths(12), // Default 1 year
+                            'statut' => 'en_attente',
+                            'auto_renouvellement' => true,
+                        ]);
+
+                        // Notify specifically about subscription request
+                        \Illuminate\Support\Facades\Notification::send($admins, new \App\Notifications\NewSubscriptionRequest($agenceData, $plan));
+                    }
+                }
                 break;
 
             case 'entrepreneur':
@@ -102,6 +130,18 @@ class AuthController extends Controller
             'solde' => 0,
             'devise' => 'XOF',
         ]);
+
+        // If inactive (Agency), return message without token
+        if (!$isActive) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Compte créé avec succès. Il sera activé après validation par un administrateur.',
+                'data' => [
+                    'user' => $user,
+                    'requires_activation' => true,
+                ],
+            ], 201);
+        }
 
         // Create token
         $token = $user->createToken('auth_token')->plainTextToken;
@@ -145,6 +185,17 @@ class AuthController extends Controller
 
         // Create new token
         $token = $user->createToken('auth_token')->plainTextToken;
+
+        try {
+            \Illuminate\Support\Facades\Log::channel('discord')->info("Nouvelle Connexion : {$user->prenom} {$user->nom}", [
+                'email' => $user->email,
+                'role' => $user->user_type,
+                'ip' => $request->ip(),
+                'time' => now()->toDateTimeString()
+            ]);
+        } catch (\Exception $e) {
+            // Fail silently
+        }
 
         return response()->json([
             'success' => true,

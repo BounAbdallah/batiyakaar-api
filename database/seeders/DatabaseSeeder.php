@@ -19,11 +19,11 @@ class DatabaseSeeder extends Seeder
         // Order is important! Respect dependencies
         $this->call([
             PlansSeeder::class,
+            SuperAdminSeeder::class, // Admin first
             UsersSeeder::class,
+            PropertiesSeeder::class,  // Immeubles, Biens, Baux
             // ProjetConstructionSeeder::class,  // À créer
-            // BiensSeeder::class,                // À créer
             // ProduitsSeeder::class,             // À créer
-            // BauxSeeder::class,                 // À créer
             // TransactionsSeeder::class,         // À créer
         ]);
 
