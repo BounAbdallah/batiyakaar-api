@@ -16,6 +16,7 @@ class EtatDesLieux extends Model
         'type',
         'date_etat_des_lieux',
         'observations',
+        'content',
         'documents',
     ];
 
@@ -23,6 +24,7 @@ class EtatDesLieux extends Model
     {
         return [
             'date_etat_des_lieux' => 'date',
+            'content' => 'array',
             'documents' => 'array',
         ];
     }

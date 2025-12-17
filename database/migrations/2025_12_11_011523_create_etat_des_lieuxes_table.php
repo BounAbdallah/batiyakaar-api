@@ -16,6 +16,7 @@ return new class extends Migration {
             $table->enum('type', ['entrant', 'sortant']);
             $table->date('date_etat_des_lieux');
             $table->text('observations')->nullable();
+            $table->json('content')->nullable(); // Structured data for rooms, keys, meters
             $table->json('documents')->nullable(); // Photos, PDFs
             $table->timestamps();
             $table->softDeletes();

@@ -81,6 +81,8 @@ Route::prefix('v1')->group(function () {
         Route::get('/dashboard/stats', [\App\Http\Controllers\Api\DashboardController::class, 'stats']);
 
         // Etats des lieux
+        // Etats des lieux
+        Route::get('/etats-des-lieux/{id}/download', [\App\Http\Controllers\Api\EtatDesLieuxController::class, 'generatePdf']);
         Route::apiResource('etats-des-lieux', \App\Http\Controllers\Api\EtatDesLieuxController::class);
 
         // Bailleurs

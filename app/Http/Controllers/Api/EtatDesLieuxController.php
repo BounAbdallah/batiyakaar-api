@@ -32,6 +32,9 @@ class EtatDesLieuxController extends Controller
     /**
      * Store a newly created resource in storage.
      */
+    /**
+     * Store a newly created resource in storage.
+     */
     public function store(Request $request)
     {
         $validated = $request->validate([
@@ -39,6 +42,7 @@ class EtatDesLieuxController extends Controller
             'type' => 'required|in:entrant,sortant',
             'date_etat_des_lieux' => 'required|date',
             'observations' => 'nullable|string',
+            'content' => 'nullable|array', // Structured data
             'documents' => 'nullable|array'
         ]);
 
@@ -62,6 +66,22 @@ class EtatDesLieuxController extends Controller
             'success' => true,
             'data' => $etat
         ]);
+    }
+
+    /**
+     * Generate PDF for the specified resource.
+     */
+    public function generatePdf($id)
+    {
+        // DomPDF can be memory intensive
+        ini_set('memory_limit', '512M');
+        set_time_limit(300);
+
+        $etat = EtatDesLieux::with(['bail.bien', 'bail.locataire.user', 'bail.agence', 'bail.agence.user'])->findOrFail($id);
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdfs.etat_des_lieux', compact('etat'));
+
+        return $pdf->download("etat_des_lieux_{$etat->id}.pdf");
     }
 
     /**
