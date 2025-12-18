@@ -192,21 +192,45 @@ Route::prefix('v1')->group(function () {
             Route::get('/agencies', [AdminController::class, 'agencies']);
             Route::get('/agencies/{id}', [AdminController::class, 'showAgency']);
 
+            // Commissions Management
+            Route::get('/commissions', [AdminController::class, 'commissions']);
+            Route::post('/commissions/{id}/pay', [AdminController::class, 'payCommission']);
+
+            // Custom Plan Requests Management
+            Route::get('/custom-plan-requests', [\App\Http\Controllers\Api\CustomPlanRequestController::class, 'index']);
+            Route::get('/custom-plan-requests/{id}', [\App\Http\Controllers\Api\CustomPlanRequestController::class, 'show']);
+            Route::put('/custom-plan-requests/{id}', [\App\Http\Controllers\Api\CustomPlanRequestController::class, 'update']);
+            Route::post('/custom-plan-requests/{id}/approve', [\App\Http\Controllers\Api\CustomPlanRequestController::class, 'approve']);
+
             // Plans management
             Route::get('/plans', [AdminController::class, 'plans']);
             Route::get('/plans/{id}', [AdminController::class, 'showPlan']);
-            Route::post('/plans', [AdminController::class, 'storePlan']);
-            Route::put('/plans/{id}', [AdminController::class, 'updatePlan']);
+            Route::get('/plans/{id}/subscribers', [\App\Http\Controllers\Api\PlanController::class, 'getSubscribers']);
+            Route::post('/plans', [\App\Http\Controllers\Api\PlanController::class, 'store']);
+            Route::put('/plans/{id}', [\App\Http\Controllers\Api\PlanController::class, 'update']);
+            Route::delete('/plans/{id}', [\App\Http\Controllers\Api\PlanController::class, 'destroy']);
 
             Route::put('/users/{id}/status', [AdminController::class, 'toggleUserStatus']);
             Route::put('/agencies/{id}/subscription', [AdminController::class, 'updateAgencySubscription']);
+
+            // Contact Messages
+            Route::get('/contact-messages', [\App\Http\Controllers\Api\ContactController::class, 'index']);
+            Route::get('/contact-messages/{id}', [\App\Http\Controllers\Api\ContactController::class, 'show']);
+            Route::put('/contact-messages/{id}', [\App\Http\Controllers\Api\ContactController::class, 'update']);
         });
 
     });
 
-    // Public Plans Route (Outside protected group if you want them visible to anyone, 
+    // Public Plans Route (Outside protected group if you want them visible to anyone,
     // but the task says "Portal", usually pricing is public)
     Route::get('/admin/commissions', [App\Http\Controllers\Api\AdminController::class, 'commissions']);
-    Route::post('/admin/plans', [App\Http\Controllers\Api\AdminController::class, 'storePlan']);
+    Route::post('/admin/plans', [App\Http\Controllers\Api\AdminController::class, 'storePlan']);    // Plans (Public)
     Route::get('/plans', [\App\Http\Controllers\Api\PlanController::class, 'index']);
+    Route::post('/plans/validate-token', [\App\Http\Controllers\Api\PlanController::class, 'validateToken']);
+
+    // Custom Plan Requests (Public)
+    Route::post('/custom-plan-requests', [\App\Http\Controllers\Api\CustomPlanRequestController::class, 'store']);
+
+    // Contact (Public)
+    Route::post('/contact', [\App\Http\Controllers\Api\ContactController::class, 'store']);
 });
