@@ -17,10 +17,13 @@ class IncidentController extends Controller
         $query = Incident::query();
 
         // Filter by user role - automatic restriction
-        if ($user->user_type === 'agence' && $user->agence) {
-            $query->whereHas('bail', function ($q) use ($user) {
-                $q->where('agence_id', $user->agence->id);
-            });
+        if ($user->user_type === 'agence') {
+            $agenceId = $user->agence ? $user->agence->id : $user->agence_id;
+            if ($agenceId) {
+                $query->whereHas('bail', function ($q) use ($agenceId) {
+                    $q->where('agence_id', $agenceId);
+                });
+            }
         } elseif ($user->user_type === 'bailleur' && $user->bailleur) {
             $query->whereHas('bail.bien', function ($q) use ($user) {
                 $q->where('bailleur_id', $user->bailleur->id);

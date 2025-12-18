@@ -106,18 +106,28 @@
 </head>
 
 <body>
+    @php
+        ini_set('memory_limit', '256M');
+    @endphp
+
     @if($bien->agence && $bien->agence->logo)
         @php
-            $logoPath = storage_path('app/public/logos/' . $bien->agence->logo);
-            if (file_exists($logoPath)) {
-                $logoData = base64_encode(file_get_contents($logoPath));
-                $logoMime = mime_content_type($logoPath);
-                $logoSrc = 'data:' . $logoMime . ';base64,' . $logoData;
-            } else {
+            $logoSrc = null;
+            try {
+                $logoPath = storage_path('app/public/logos/' . $bien->agence->logo);
+                if (file_exists($logoPath)) {
+                    $logoData = file_get_contents($logoPath);
+                    if ($logoData !== false) {
+                        $logoMime = mime_content_type($logoPath);
+                        $logoSrc = 'data:' . $logoMime . ';base64,' . base64_encode($logoData);
+                    }
+                }
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::error("Logo loading error in mandat: " . $e->getMessage());
                 $logoSrc = null;
             }
         @endphp
-        @if(isset($logoSrc))
+        @if(isset($logoSrc) && $logoSrc)
             <div class="header-logo">
                 <img src="{{ $logoSrc }}" alt="Logo">
             </div>

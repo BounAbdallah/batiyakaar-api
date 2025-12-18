@@ -36,6 +36,10 @@ class DiscordHandler extends AbstractProcessingHandler
 
     protected function write(LogRecord $record): void
     {
+        if (empty($this->url)) {
+            return;
+        }
+
         try {
             Http::post($this->url, [
                 'content' => "**[{$record->level->name}]** {$record->message}",

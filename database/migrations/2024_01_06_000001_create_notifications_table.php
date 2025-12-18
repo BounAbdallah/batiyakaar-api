@@ -12,7 +12,7 @@ return new class extends Migration {
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
             $table->string('titre');
             $table->text('message');
-            $table->enum('type', ['whatsapp', 'email', 'sms', 'systeme']);
+            $table->enum('type', ['whatsapp', 'email', 'sms', 'systeme', 'bail_expire', 'bail_expiration_7j', 'bail_expiration_30j', 'paiement', 'paiement_retard', 'paiement_partiel', 'incident']);
             $table->timestamp('date_envoi');
             $table->boolean('lue')->default(false);
             $table->json('metadata')->nullable(); // Channel-specific data

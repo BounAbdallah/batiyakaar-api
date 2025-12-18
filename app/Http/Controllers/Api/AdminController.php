@@ -132,9 +132,36 @@ class AdminController extends Controller
 
     // --- Plan Management ---
 
+    public function showPlan($id)
+    {
+        $plan = \App\Models\Plan::withCount([
+            'abonnements' => function ($query) {
+                $query->where('statut', 'actif');
+            }
+        ])->findOrFail($id);
+
+        $subscribers = Abonnement::with(['agence.user'])
+            ->where('plan_id', $id)
+            ->whereHas('agence') // Ensure agence exists
+            ->orderBy('created_at', 'desc')
+            ->paginate(20);
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'plan' => $plan,
+                'subscribers' => $subscribers
+            ]
+        ]);
+    }
+
     public function plans()
     {
-        $plans = \App\Models\Plan::all();
+        $plans = \App\Models\Plan::withCount([
+            'abonnements' => function ($query) {
+                $query->where('statut', 'actif');
+            }
+        ])->get();
         return response()->json(['success' => true, 'data' => $plans]);
     }
 

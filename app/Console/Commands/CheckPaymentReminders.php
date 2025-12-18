@@ -8,6 +8,9 @@ use App\Models\Notification;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
 
+use Illuminate\Support\Facades\Mail;
+use App\Mail\PaymentReminder;
+
 class CheckPaymentReminders extends Command
 {
     /**
@@ -80,6 +83,15 @@ class CheckPaymentReminders extends Command
                     ->exists();
 
                 if (!$existingNotification) {
+                    $metadata = [
+                        'bail_id' => $lease->id,
+                        'bien_id' => $lease->bien_id,
+                        'locataire_id' => $lease->locataire_id,
+                        'month' => $currentMonth,
+                        'year' => $currentYear,
+                        'loyer_attendu' => $lease->loyer_mensuel
+                    ];
+
                     // Notify agency
                     if ($lease->agence && $lease->agence->user) {
                         Notification::create([
@@ -89,15 +101,22 @@ class CheckPaymentReminders extends Command
                             'type' => $notificationType,
                             'date_envoi' => now(),
                             'lue' => false,
-                            'metadata' => [
-                                'bail_id' => $lease->id,
-                                'bien_id' => $lease->bien_id,
-                                'locataire_id' => $lease->locataire_id,
-                                'month' => $currentMonth,
-                                'year' => $currentYear,
-                                'loyer_attendu' => $lease->loyer_mensuel
-                            ]
+                            'metadata' => $metadata
                         ]);
+
+                        // Send Email to Agency
+                        try {
+                            Mail::to($lease->agence->user)->send(new PaymentReminder(
+                                $lease->agence->user,
+                                $isPartial ? 'Alerte Paiement Partiel' : 'Alerte Loyer Impayé',
+                                $message,
+                                $metadata,
+                                $lease->agence
+                            ));
+                            $this->info("Email sent to agency for lease #{$lease->id}");
+                        } catch (\Exception $e) {
+                            $this->error("Failed to send email to agency: " . $e->getMessage());
+                        }
                     }
 
                     // Notify landlord
@@ -109,16 +128,35 @@ class CheckPaymentReminders extends Command
                             'type' => $notificationType,
                             'date_envoi' => now(),
                             'lue' => false,
-                            'metadata' => [
-                                'bail_id' => $lease->id,
-                                'bien_id' => $lease->bien_id,
-                                'month' => $currentMonth,
-                                'year' => $currentYear
-                            ]
+                            'metadata' => $metadata
                         ]);
+
+                        // Send Email to Landlord
+                        try {
+                            Mail::to($lease->bien->bailleur->user)->send(new PaymentReminder(
+                                $lease->bien->bailleur->user,
+                                $isPartial ? 'Alerte Paiement Partiel' : 'Alerte Loyer Impayé',
+                                $message,
+                                $metadata,
+                                $lease->agence
+                            ));
+                            $this->info("Email sent to landlord for lease #{$lease->id}");
+                        } catch (\Exception $e) {
+                            $this->error("Failed to send email to landlord: " . $e->getMessage());
+                        }
                     }
 
                     $this->info("Sent reminder for lease #{$lease->id}");
+                    try {
+                        \Illuminate\Support\Facades\Log::channel('discord')->info("🔔 Rappel de paiement envoyé", [
+                            'bail_id' => $lease->id,
+                            'type' => $isPartial ? 'Paiement partiel' : 'Impayé',
+                            'montant_attendu' => $lease->loyer_mensuel,
+                            'message' => $message
+                        ]);
+                    } catch (\Exception $e) {
+                        // Ignore Discord logging errors
+                    }
                 }
             }
         }

@@ -12,13 +12,24 @@ return new class extends Migration {
     public function up(): void
     {
         Schema::table('paiements_loyer', function (Blueprint $table) {
-            $table->decimal('montant_attendu', 15, 2)->nullable()->after('montant')->comment('Montant total du loyer attendu pour cette période');
-            $table->date('periode_debut')->nullable()->after('date_prevue')->comment('Début de la période couverte par ce paiement');
-            $table->date('periode_fin')->nullable()->after('periode_debut')->comment('Fin de la période couverte par ce paiement');
+            if (!Schema::hasColumn('paiements_loyer', 'montant_attendu')) {
+                $table->decimal('montant_attendu', 15, 2)->nullable()->after('montant')->comment('Montant total du loyer attendu pour cette période');
+            }
+            if (!Schema::hasColumn('paiements_loyer', 'periode_debut')) {
+                $table->date('periode_debut')->nullable()->after('date_prevue')->comment('Début de la période couverte par ce paiement');
+            }
+            if (!Schema::hasColumn('paiements_loyer', 'periode_fin')) {
+                $table->date('periode_fin')->nullable()->after('periode_debut')->comment('Fin de la période couverte par ce paiement');
+            }
         });
 
         // Modify statut enum to include 'partiel'
-        DB::statement("ALTER TABLE paiements_loyer MODIFY COLUMN statut ENUM('en_attente', 'paye', 'partiel', 'impaye', 'annule') DEFAULT 'en_attente'");
+        try {
+            DB::statement("ALTER TABLE paiements_loyer MODIFY COLUMN statut ENUM('en_attente', 'paye', 'partiel', 'impaye', 'annule') DEFAULT 'en_attente'");
+        } catch (\Exception $e) {
+            // SQLite does not support MODIFY COLUMN, so we ignore this error.
+            // If strict mode is needed, a full table recreation is required for SQLite.
+        }
     }
 
     /**

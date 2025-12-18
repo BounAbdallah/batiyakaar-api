@@ -24,11 +24,12 @@ class LocataireController extends Controller
         ]);
 
         // Filter by user role
-        if ($user->user_type === 'agence' && $user->agence) {
-            // Agency: only tenants with leases managed by this agency
-            $query->whereHas('baux', function ($q) use ($user) {
-                $q->where('agence_id', $user->agence->id);
-            });
+        if ($user->user_type === 'agence') {
+            $agenceId = $user->agence ? $user->agence->id : $user->agence_id;
+            if ($agenceId) {
+                // Agency: show ALL tenants created by this agency (with or without leases)
+                $query->where('agence_id', $agenceId);
+            }
         } elseif ($user->user_type === 'bailleur' && $user->bailleur) {
             // Bailleur: only tenants renting their properties
             $query->whereHas('baux.bien', function ($q) use ($user) {
@@ -65,24 +66,77 @@ class LocataireController extends Controller
             'nom' => 'required|string',
             'email' => 'required|email|unique:users,email',
             'telephone' => 'nullable|string',
-            'password' => 'required|string|min:6',
+            'numero_cni' => 'nullable|string|max:50',
+            'date_naissance' => 'nullable|date|before:today',
+            'lieu_naissance' => 'nullable|string|max:255',
+            'cni_recto' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+            'cni_verso' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
         ]);
+
+        // Auto-generate secure password
+        $password = \Illuminate\Support\Str::random(10);
 
         $user = \App\Models\User::create([
             'prenom' => $validated['prenom'],
             'nom' => $validated['nom'],
             'email' => $validated['email'],
             'telephone' => $validated['telephone'],
-            'password' => \Illuminate\Support\Facades\Hash::make($validated['password']),
+            'password' => \Illuminate\Support\Facades\Hash::make($password),
             'user_type' => 'locataire',
         ]);
 
-        $locataire = Locataire::create(['user_id' => $user->id]);
+        // Get agency ID
+        $authUser = $request->user();
+        $agenceId = $authUser->agence ? $authUser->agence->id : $authUser->agence_id;
+
+        // Handle file uploads
+        $cniRectoPath = null;
+        $cniVersoPath = null;
+
+        if ($request->hasFile('cni_recto')) {
+            $cniRectoPath = $request->file('cni_recto')->store('cni/locataires', 'public');
+        }
+
+        if ($request->hasFile('cni_verso')) {
+            $cniVersoPath = $request->file('cni_verso')->store('cni/locataires', 'public');
+        }
+
+        $locataire = Locataire::create([
+            'user_id' => $user->id,
+            'agence_id' => $agenceId,
+            'numero_cni' => $validated['numero_cni'] ?? null,
+            'date_naissance' => $validated['date_naissance'] ?? null,
+            'lieu_naissance' => $validated['lieu_naissance'] ?? null,
+            'cni_recto' => $cniRectoPath,
+            'cni_verso' => $cniVersoPath,
+        ]);
+
+        // Check if agency plan allows tenant access and send email
+        $agence = $authUser->agence ?? \App\Models\Agence::find($authUser->agence_id);
+        $emailSent = false;
+
+        if ($agence) {
+            $abonnement = $agence->abonnement()->where('statut', 'actif')->first();
+
+            if ($abonnement && $abonnement->plan) {
+                $fonctionnalites = $abonnement->plan->fonctionnalites ?? [];
+
+                // Check if plan allows tenant access
+                if (isset($fonctionnalites['accies_locataires']) && $fonctionnalites['accies_locataires']) {
+                    \Illuminate\Support\Facades\Mail::to($user)->send(
+                        new \App\Mail\TenantAccountCreated($user, $password, $agence)
+                    );
+                    $emailSent = true;
+                }
+            }
+        }
 
         return response()->json([
             'success' => true,
             'message' => 'Locataire créé avec succès',
-            'data' => $locataire->load('user')
+            'data' => $locataire->load('user'),
+            'email_sent' => $emailSent,
+            'password_temp' => $password // For dev/demo only
         ], 201);
     }
 

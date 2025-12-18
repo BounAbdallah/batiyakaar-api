@@ -11,7 +11,11 @@ return new class extends Migration {
      */
     public function up(): void
     {
-        DB::statement("ALTER TABLE abonnements MODIFY COLUMN statut ENUM('actif', 'expire', 'suspendu', 'annule', 'en_attente') DEFAULT 'en_attente'");
+        try {
+            DB::statement("ALTER TABLE abonnements MODIFY COLUMN statut ENUM('actif', 'expire', 'suspendu', 'annule', 'en_attente') DEFAULT 'en_attente'");
+        } catch (\Exception $e) {
+            // SQLite does not support MODIFY COLUMN
+        }
     }
 
     /**

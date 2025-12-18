@@ -101,28 +101,27 @@
 </head>
 
 <body>
-    {{-- Temporarily disabled logo due to memory issues --}}
-    {{-- @if($bail->agence && $bail->agence->logo)
-    @php
-    $logoPath = storage_path('app/public/logos/' . $bail->agence->logo);
-    if (file_exists($logoPath)) {
-    try {
-    $logoData = base64_encode(file_get_contents($logoPath));
-    $logoMime = mime_content_type($logoPath);
-    $logoSrc = 'data:' . $logoMime . ';base64,' . $logoData;
-    } catch (\Exception $e) {
-    $logoSrc = null;
-    }
-    } else {
-    $logoSrc = null;
-    }
-    @endphp
-    @if(isset($logoSrc))
-    <div class="header-logo">
-        <img src="{{ $logoSrc }}" alt="Logo">
-    </div>
+    @if($bail->agence && $bail->agence->logo)
+        @php
+            $logoPath = storage_path('app/public/logos/' . $bail->agence->logo);
+            if (file_exists($logoPath)) {
+                try {
+                    $logoData = base64_encode(file_get_contents($logoPath));
+                    $logoMime = mime_content_type($logoPath);
+                    $logoSrc = 'data:' . $logoMime . ';base64,' . $logoData;
+                } catch (\Exception $e) {
+                    $logoSrc = null;
+                }
+            } else {
+                $logoSrc = null;
+            }
+        @endphp
+        @if(isset($logoSrc))
+            <div class="header-logo">
+                <img src="{{ $logoSrc }}" alt="Logo">
+            </div>
+        @endif
     @endif
-    @endif --}}
 
     <div class="header">
         @if($bail->agence)

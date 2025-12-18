@@ -16,15 +16,21 @@ class BailController extends Controller
         $user = $request->user();
         $query = Bail::query();
 
+        // Admin sees all leases
+
         // Filter by user role - automatic restriction
-        if ($user->user_type === 'agence' && $user->agence) {
-            $query->where('agence_id', $user->agence->id);
+        if ($user->user_type === 'agence') {
+            $agenceId = $user->agence ? $user->agence->id : $user->agence_id;
+            if ($agenceId) {
+                $query->where('agence_id', $agenceId);
+            }
         } elseif ($user->user_type === 'bailleur' && $user->bailleur) {
             $query->whereHas('bien', function ($q) use ($user) {
                 $q->where('bailleur_id', $user->bailleur->id);
             });
+        } elseif ($user->user_type === 'locataire' && $user->locataire) {
+            $query->where('locataire_id', $user->locataire->id);
         }
-        // Admin sees all leases
 
         // Filters
         if ($request->has('statut')) {

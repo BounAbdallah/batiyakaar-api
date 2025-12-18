@@ -26,6 +26,8 @@ class User extends Authenticatable
         'password',
         'user_type',
         'actif',
+        'agence_id',
+        'permissions',
     ];
 
     /**
@@ -46,6 +48,7 @@ class User extends Authenticatable
             'password' => 'hashed',
             'actif' => 'boolean',
             'date_naissance' => 'date',
+            'permissions' => 'array',
         ];
     }
 
@@ -57,7 +60,20 @@ class User extends Authenticatable
 
     public function agence()
     {
+        // If user_type is 'agence', they own it (hasOne).
+        // If they are a team member, they belong to it (belongsTo).
+        // To avoid conflict, let's keep 'agence' as ownership (hasOne) for backward compat,
+        // and add 'equipeAgence' for membership?
+        // Or better: Unify. If owner, agence_id is null but they have Agence record with user_id.
+        // If member, `users.agence_id` is set.
+
+        // This existing relationship is hasOne (Owner).
         return $this->hasOne(Agence::class);
+    }
+
+    public function employeurAgence()
+    {
+        return $this->belongsTo(Agence::class, 'agence_id');
     }
 
     public function entrepreneur()

@@ -180,6 +180,32 @@ class AuthController extends Controller
             ]);
         }
 
+        // Check if user is restricted by Agency Plan
+        if (in_array($user->user_type, ['locataire', 'bailleur']) && $user->employeurAgence) {
+            $plan = $user->employeurAgence->abonnement?->plan;
+            if ($plan) {
+                // Ensure functionalities is an array (it should be cast in Plan model, but verifying)
+                $features = $plan->fonctionnalites;
+                if (is_string($features)) {
+                    $features = json_decode($features, true);
+                }
+
+                $canAccess = false;
+                if ($user->user_type === 'locataire' && ($features['accies_locataires'] ?? false)) {
+                    $canAccess = true;
+                }
+                if ($user->user_type === 'bailleur' && ($features['accies_bailleurs'] ?? false)) {
+                    $canAccess = true;
+                }
+
+                if (!$canAccess) {
+                    throw ValidationException::withMessages([
+                        'email' => ['L\'abonnement de votre agence ne permet pas votre accès.'],
+                    ]);
+                }
+            }
+        }
+
         // Revoke all previous tokens
         $user->tokens()->delete();
 

@@ -21,7 +21,7 @@ class DashboardController extends Controller
         $stats = [];
 
         if ($user->user_type === 'agence') {
-            $agenceId = $user->agence->id;
+            $agenceId = $user->agence ? $user->agence->id : $user->agence_id;
             $this->getRichStats($stats, 'agence_id', $agenceId);
         } elseif ($user->user_type === 'bailleur') {
             $bailleurId = $user->bailleur->id;
@@ -246,5 +246,59 @@ class DashboardController extends Controller
                     ];
                 });
         }
+    }
+
+    public function sidebarCounts(Request $request)
+    {
+        $user = Auth::user();
+        $counts = [
+            'incidents' => 0,
+            'payments' => 0,
+            'notifications' => $user->notifications()->where('lue', false)->count()
+        ];
+
+        if ($user->user_type === 'agence') {
+            $agenceId = $user->agence ? $user->agence->id : $user->agence_id;
+            // Incidents: Open or In Progress
+            $counts['incidents'] = Incident::whereHas('bail', function ($q) use ($agenceId) {
+                $q->where('agence_id', $agenceId);
+            })->whereIn('statut', ['ouvert', 'en_cours'])->count();
+
+            // Payments: Late rents for current month (active leases without paid status)
+            // Simplified: Count unpaid/partial payments
+            $counts['payments'] = PaiementLoyer::whereHas('bail', function ($q) use ($agenceId) {
+                $q->where('agence_id', $agenceId);
+            })->whereIn('statut', ['impaye', 'partiel', 'en_retard'])->count();
+
+            // Or maybe simpler: Count active leases with debt? For now, stick to payment items status.
+
+        } elseif ($user->user_type === 'bailleur' && $user->bailleur) {
+            $bailleurId = $user->bailleur->id;
+            $counts['incidents'] = Incident::whereHas('bail.bien', function ($q) use ($bailleurId) {
+                $q->where('bailleur_id', $bailleurId);
+            })->whereIn('statut', ['ouvert', 'en_cours'])->count();
+
+            $counts['payments'] = PaiementLoyer::whereHas('bail.bien', function ($q) use ($bailleurId) {
+                $q->where('bailleur_id', $bailleurId);
+            })->whereIn('statut', ['impaye', 'partiel', 'en_retard'])->count();
+
+        } elseif ($user->user_type === 'locataire' && $user->locataire) {
+            $locataireId = $user->locataire->id;
+            // Incidents: All incidents reported by this tenant (or maybe just open ones?)
+            // Let's show open ones
+            $counts['incidents'] = Incident::whereHas('bail', function ($q) use ($locataireId) {
+                $q->where('locataire_id', $locataireId);
+            })->whereIn('statut', ['ouvert', 'en_cours'])->count();
+
+            // Payments: Unpaid/Late
+            $counts['payments'] = PaiementLoyer::whereHas('bail', function ($q) use ($locataireId) {
+                $q->where('locataire_id', $locataireId);
+            })->whereIn('statut', ['impaye', 'partiel', 'en_retard'])->count();
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => $counts
+        ]);
     }
 }

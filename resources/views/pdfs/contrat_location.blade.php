@@ -167,6 +167,10 @@
 </head>
 
 <body>
+    @php
+        ini_set('memory_limit', '256M');
+    @endphp
+
     {{-- Modern Header: Logo + Agency Info --}}
     <div class="top-header">
         <div class="logo-section">

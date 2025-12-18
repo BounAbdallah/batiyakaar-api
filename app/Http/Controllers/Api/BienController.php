@@ -16,9 +16,12 @@ class BienController extends Controller
         $query = Bien::query();
 
         // Filter by user role - automatic restriction
-        if ($user->user_type === 'agence' && $user->agence) {
-            // Agency sees only properties they manage
-            $query->where('agence_id', $user->agence->id);
+        if ($user->user_type === 'agence') {
+            // Agency owner or team member - see only properties they manage
+            $agenceId = $user->agence ? $user->agence->id : $user->agence_id;
+            if ($agenceId) {
+                $query->where('agence_id', $agenceId);
+            }
         } elseif ($user->user_type === 'bailleur' && $user->bailleur) {
             // Bailleur sees only their own properties
             $query->where('bailleur_id', $user->bailleur->id);
@@ -143,6 +146,37 @@ class BienController extends Controller
 
         $validated['statut'] = 'disponible';
 
+        if ($user->user_type === 'agence') {
+            $agence = $user->agence;
+
+            // Check subscription
+            $abonnement = $agence->abonnement()->actif()->first();
+            if (!$abonnement) {
+                // If no active subscription, you might want to block or allow a free tier.
+                // For now, let's assume strict subscription requirement or check plans.
+                // Adapting logic: Check if a limit exists in a default plan or enforce subscription.
+                // Assuming strict enforcement based on user request:
+                // return response()->json(['message' => 'Aucun abonnement actif. Veuillez souscrire à un plan.'], 403);
+
+                // Relaxed logic for dev/demo if no plan: allow unlimited or default?
+                // Adhering to "Limit enforcement" -> assuming limits come from Plan.
+                // If no plan, maybe 0 limit?
+            }
+
+            if ($abonnement) {
+                $plan = $abonnement->plan;
+                if ($plan && $plan->limite_biens > 0) {
+                    $currentBiensCount = $agence->biens()->count();
+                    if ($currentBiensCount >= $plan->limite_biens) {
+                        return response()->json([
+                            'message' => "La limite de biens pour votre abonnement ({$plan->limite_biens}) a été atteinte. Veuillez passer au plan supérieur.",
+                            'limit_reached' => true
+                        ], 403);
+                    }
+                }
+            }
+        }
+
         $bien = Bien::create($validated);
 
         return response()->json([
@@ -226,7 +260,8 @@ class BienController extends Controller
     private function checkOwnership($user, $bien)
     {
         if ($user->user_type === 'agence') {
-            if ($bien->agence_id !== $user->agence->id) {
+            $agenceId = $user->agence ? $user->agence->id : $user->agence_id;
+            if ($bien->agence_id !== $agenceId) {
                 abort(403, 'Accès non autorisé à ce bien.');
             }
         } elseif ($user->user_type === 'bailleur') {

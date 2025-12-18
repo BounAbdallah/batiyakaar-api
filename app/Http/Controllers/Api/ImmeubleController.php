@@ -18,7 +18,10 @@ class ImmeubleController extends Controller
         $query = Immeuble::query();
 
         if ($user->user_type === 'agence') {
-            $query->where('agence_id', $user->agence->id);
+            $agenceId = $user->agence ? $user->agence->id : $user->agence_id;
+            if ($agenceId) {
+                $query->where('agence_id', $agenceId);
+            }
         } elseif ($user->user_type === 'bailleur') {
             $query->where('bailleur_id', $user->bailleur->id);
         }
@@ -101,7 +104,7 @@ class ImmeubleController extends Controller
         if ($user->user_type === 'agence') {
             $request->validate(['bailleur_id' => 'required|exists:bailleurs,id']);
             $bailleurId = $request->bailleur_id;
-            $agenceId = $user->agence->id;
+            $agenceId = $user->agence ? $user->agence->id : $user->agence_id;
         } elseif ($user->user_type === 'bailleur') {
             $bailleurId = $user->bailleur->id;
         }
@@ -276,7 +279,8 @@ class ImmeubleController extends Controller
     private function checkOwnership($user, $immeuble)
     {
         if ($user->user_type === 'agence') {
-            if ($immeuble->agence_id !== $user->agence->id) {
+            $agenceId = $user->agence ? $user->agence->id : $user->agence_id;
+            if ($immeuble->agence_id !== $agenceId) {
                 abort(403, 'Accès non autorisé à cet immeuble.');
             }
         } elseif ($user->user_type === 'bailleur') {

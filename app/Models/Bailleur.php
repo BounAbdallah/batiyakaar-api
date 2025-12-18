@@ -13,6 +13,11 @@ class Bailleur extends Model
         'user_id',
         'pays',
         'adresse_diaspora',
+        'numero_cni',
+        'date_naissance',
+        'lieu_naissance',
+        'cni_recto',
+        'cni_verso',
     ];
 
     // Relationships

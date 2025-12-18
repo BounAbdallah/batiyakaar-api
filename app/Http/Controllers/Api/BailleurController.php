@@ -21,10 +21,19 @@ class BailleurController extends Controller
 
         // If Agency, only show Bailleurs who have properties managed by this agency
         if ($user->user_type === 'agence') {
-            $agenceId = $user->agence->id;
+            $agenceId = $user->agence ? $user->agence->id : $user->agence_id;
             $query->whereHas('biens', function ($q) use ($agenceId) {
                 $q->where('agence_id', $agenceId);
             });
+        }
+
+        // Global Stats for the Dashboard
+        $stats = [];
+        if ($user->user_type === 'agence') {
+            $agenceId = $user->agence ? $user->agence->id : $user->agence_id;
+            $stats['total_bailleurs'] = Bailleur::whereHas('biens', function ($q) use ($agenceId) {
+                $q->where('agence_id', $agenceId);
+            })->count();
         }
 
         if ($request->has('search')) {
@@ -49,16 +58,20 @@ class BailleurController extends Controller
 
         // Global Stats for the Dashboard
         $stats = [
-            'total_bailleurs' => $query->count(),
+            'total_bailleurs' => 0, // Will be calculated below based on user type
             'total_biens' => 0,
             'total_locataires' => 0,
             'total_revenus' => 0,
         ];
 
         if ($user->user_type === 'agence') {
-            $agenceId = $user->agence->id;
+            $agenceId = $user->agence ? $user->agence->id : $user->agence_id;
 
-            // Re-calculate counts for stats if needed, or use separate queries as before
+            // Use the agenceId already determined above
+            $stats['total_bailleurs'] = Bailleur::whereHas('biens', function ($q) use ($agenceId) {
+                $q->where('agence_id', $agenceId);
+            })->count();
+
             // Total Biens for this agency
             $stats['total_biens'] = \App\Models\Bien::where('agence_id', $agenceId)->count();
 
@@ -71,7 +84,12 @@ class BailleurController extends Controller
             $stats['total_revenus'] = \App\Models\PaiementLoyer::whereHas('bail.bien', function ($q) use ($agenceId) {
                 $q->where('agence_id', $agenceId);
             })->where('statut', 'paye')->sum('montant');
+        } else {
+            // For other user types (e.g., admin), calculate global stats or specific to their context
+            $stats['total_bailleurs'] = Bailleur::count();
+            // Add other global stats if needed for non-agency users
         }
+
 
         return response()->json([
             'success' => true,
@@ -92,10 +110,17 @@ class BailleurController extends Controller
             'nom' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
             'telephone' => 'nullable|string|max:20',
-            'pays' => 'required|string|max:100', // Required by DB
+            'pays' => 'required|string|max:100',
             'adresse_diaspora' => 'nullable|string',
-            'password' => ['required', 'confirmed', Rules\Password::defaults()],
+            'numero_cni' => 'nullable|string|max:50',
+            'date_naissance' => 'nullable|date|before:today',
+            'lieu_naissance' => 'nullable|string|max:255',
+            'cni_recto' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+            'cni_verso' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
         ]);
+
+        // Auto-generate secure password
+        $password = \Illuminate\Support\Str::random(10);
 
         // Create User
         $user = User::create([
@@ -103,21 +128,61 @@ class BailleurController extends Controller
             'nom' => $validated['nom'],
             'email' => $validated['email'],
             'telephone' => $validated['telephone'] ?? null,
-            'password' => Hash::make($validated['password']),
+            'password' => Hash::make($password),
             'user_type' => 'bailleur',
         ]);
 
         // Create Bailleur Profile
+        // Handle file uploads
+        $cniRectoPath = null;
+        $cniVersoPath = null;
+
+        if ($request->hasFile('cni_recto')) {
+            $cniRectoPath = $request->file('cni_recto')->store('cni/bailleurs', 'public');
+        }
+
+        if ($request->hasFile('cni_verso')) {
+            $cniVersoPath = $request->file('cni_verso')->store('cni/bailleurs', 'public');
+        }
+
         $bailleur = Bailleur::create([
             'user_id' => $user->id,
             'pays' => $validated['pays'],
             'adresse_diaspora' => $validated['adresse_diaspora'] ?? null,
+            'numero_cni' => $validated['numero_cni'] ?? null,
+            'date_naissance' => $validated['date_naissance'] ?? null,
+            'lieu_naissance' => $validated['lieu_naissance'] ?? null,
+            'cni_recto' => $cniRectoPath,
+            'cni_verso' => $cniVersoPath,
         ]);
+
+        // Check if agency plan allows landlord access and send email
+        $authUser = $request->user();
+        $agence = $authUser->agence ?? \App\Models\Agence::find($authUser->agence_id);
+        $emailSent = false;
+
+        if ($agence) {
+            $abonnement = $agence->abonnement()->where('statut', 'actif')->first();
+
+            if ($abonnement && $abonnement->plan) {
+                $fonctionnalites = $abonnement->plan->fonctionnalites ?? [];
+
+                // Check if plan allows landlord access
+                if (isset($fonctionnalites['accies_bailleurs']) && $fonctionnalites['accies_bailleurs']) {
+                    \Illuminate\Support\Facades\Mail::to($user)->send(
+                        new \App\Mail\LandlordAccountCreated($user, $password, $agence)
+                    );
+                    $emailSent = true;
+                }
+            }
+        }
 
         return response()->json([
             'success' => true,
             'message' => 'Bailleur créé avec succès',
-            'data' => $bailleur->load('user')
+            'data' => $bailleur->load('user'),
+            'email_sent' => $emailSent,
+            'password_temp' => $password // For dev/demo only
         ], 201);
     }
 

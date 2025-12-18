@@ -59,4 +59,9 @@ class Agence extends Model
     {
         return $this->hasMany(Immeuble::class);
     }
+
+    public function equipe()
+    {
+        return $this->hasMany(User::class, 'agence_id');
+    }
 }

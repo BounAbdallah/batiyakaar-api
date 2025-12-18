@@ -13,6 +13,7 @@ use App\Http\Controllers\Api\TransactionController;
 use App\Http\Controllers\Api\PortefeuilleVirtuelController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\AgenceController;
+use App\Http\Controllers\Api\TeamController;
 use App\Http\Controllers\Api\AdminController;
 use Illuminate\Support\Facades\Route;
 
@@ -56,43 +57,71 @@ Route::prefix('v1')->group(function () {
         Route::get('/projets/{id}/partenaires', [\App\Http\Controllers\Api\ProjectAssignmentController::class, 'index']);
 
         // Biens
-        Route::get('/biens/{id}/mandat/download', [BienController::class, 'downloadMandat']);
-        Route::apiResource('biens', BienController::class);
+        Route::get('/biens/{id}/mandat/download', [BienController::class, 'downloadMandat'])->middleware('permission:biens.view');
+        Route::get('/biens', [BienController::class, 'index'])->middleware('permission:biens.view');
+        Route::post('/biens', [BienController::class, 'store'])->middleware('permission:biens.create');
+        Route::get('/biens/{id}', [BienController::class, 'show'])->middleware('permission:biens.view');
+        Route::put('/biens/{id}', [BienController::class, 'update'])->middleware('permission:biens.edit');
+        Route::delete('/biens/{id}', [BienController::class, 'destroy'])->middleware('permission:biens.delete');
 
         // Baux
-        Route::get('/baux/{id}/contract/download', [BailController::class, 'downloadContract']);
-        Route::get('/baux/{id}/dette/download', [BailController::class, 'downloadDebtForBail']);
-        Route::get('/baux/{id}/demande/download', [BailController::class, 'downloadDemandLetter']);
-        Route::apiResource('baux', BailController::class);
+        Route::get('/baux/{id}/contract/download', [BailController::class, 'downloadContract'])->middleware('permission:baux.view');
+        Route::get('/baux/{id}/dette/download', [BailController::class, 'downloadDebtForBail'])->middleware('permission:baux.view');
+        Route::get('/baux/{id}/demande/download', [BailController::class, 'downloadDemandLetter'])->middleware('permission:baux.view');
+        Route::get('/baux', [BailController::class, 'index'])->middleware('permission:baux.view');
+        Route::post('/baux', [BailController::class, 'store'])->middleware('permission:baux.create');
+        Route::get('/baux/{id}', [BailController::class, 'show'])->middleware('permission:baux.view');
+        Route::put('/baux/{id}', [BailController::class, 'update'])->middleware('permission:baux.edit');
+        Route::delete('/baux/{id}', [BailController::class, 'destroy'])->middleware('permission:baux.delete');
 
         // Paiements Loyer
-        Route::get('/paiements-loyer/unpaid', [PaiementLoyerController::class, 'getUnpaidRents']);
-        Route::get('/paiements-loyer/{id}/quittance', [PaiementLoyerController::class, 'downloadQuittance']);
-        Route::get('/paiements-loyer/{id}/dette/download', [PaiementLoyerController::class, 'downloadDebtAcknowledgment']);
-        Route::get('/paiements-loyer/{id}/dette/view', [PaiementLoyerController::class, 'viewDebtAcknowledgment']);
-        Route::apiResource('paiements-loyer', PaiementLoyerController::class);
+        Route::get('/paiements-loyer/unpaid', [PaiementLoyerController::class, 'getUnpaidRents'])->middleware('permission:paiements.view');
+        Route::get('/paiements-loyer/{id}/quittance', [PaiementLoyerController::class, 'downloadQuittance'])->middleware('permission:paiements.view');
+        Route::get('/paiements-loyer/{id}/dette/download', [PaiementLoyerController::class, 'downloadDebtAcknowledgment'])->middleware('permission:paiements.view');
+        Route::get('/paiements-loyer/{id}/dette/view', [PaiementLoyerController::class, 'viewDebtAcknowledgment'])->middleware('permission:paiements.view');
+        Route::get('/paiements-loyer', [PaiementLoyerController::class, 'index'])->middleware('permission:paiements.view');
+        Route::post('/paiements-loyer', [PaiementLoyerController::class, 'store'])->middleware('permission:paiements.create');
+        Route::get('/paiements-loyer/{id}', [PaiementLoyerController::class, 'show'])->middleware('permission:paiements.view');
+        Route::put('/paiements-loyer/{id}', [PaiementLoyerController::class, 'update'])->middleware('permission:paiements.edit');
+        Route::delete('/paiements-loyer/{id}', [PaiementLoyerController::class, 'destroy'])->middleware('permission:paiements.delete');
 
         // Incidents
-        Route::apiResource('incidents', IncidentController::class);
-        Route::post('/incidents/{id}/assign', [IncidentController::class, 'assign']);
-        Route::post('/incidents/{id}/resolve', [IncidentController::class, 'resolve']);
+        Route::post('/incidents/{id}/assign', [IncidentController::class, 'assign'])->middleware('permission:incidents.edit');
+        Route::post('/incidents/{id}/resolve', [IncidentController::class, 'resolve'])->middleware('permission:incidents.edit');
+        Route::get('/incidents', [IncidentController::class, 'index'])->middleware('permission:incidents.view');
+        Route::post('/incidents', [IncidentController::class, 'store'])->middleware('permission:incidents.create');
+        Route::get('/incidents/{id}', [IncidentController::class, 'show'])->middleware('permission:incidents.view');
+        Route::put('/incidents/{id}', [IncidentController::class, 'update'])->middleware('permission:incidents.edit');
+        Route::delete('/incidents/{id}', [IncidentController::class, 'destroy'])->middleware('permission:incidents.delete');
 
         // Dashboard Stats
         Route::get('/dashboard/stats', [\App\Http\Controllers\Api\DashboardController::class, 'stats']);
+        Route::get('/dashboard/sidebar-counts', [\App\Http\Controllers\Api\DashboardController::class, 'sidebarCounts']);
 
-        // Etats des lieux
         // Etats des lieux
         Route::get('/etats-des-lieux/{id}/download', [\App\Http\Controllers\Api\EtatDesLieuxController::class, 'generatePdf']);
         Route::apiResource('etats-des-lieux', \App\Http\Controllers\Api\EtatDesLieuxController::class);
 
         // Bailleurs
-        Route::apiResource('bailleurs', \App\Http\Controllers\Api\BailleurController::class);
+        Route::get('/bailleurs', [\App\Http\Controllers\Api\BailleurController::class, 'index'])->middleware('permission:bailleurs.view');
+        Route::post('/bailleurs', [\App\Http\Controllers\Api\BailleurController::class, 'store'])->middleware('permission:bailleurs.create');
+        Route::get('/bailleurs/{id}', [\App\Http\Controllers\Api\BailleurController::class, 'show'])->middleware('permission:bailleurs.view');
+        Route::put('/bailleurs/{id}', [\App\Http\Controllers\Api\BailleurController::class, 'update'])->middleware('permission:bailleurs.edit');
+        Route::delete('/bailleurs/{id}', [\App\Http\Controllers\Api\BailleurController::class, 'destroy'])->middleware('permission:bailleurs.delete');
 
         // Immeubles
-        Route::apiResource('immeubles', \App\Http\Controllers\Api\ImmeubleController::class);
+        Route::get('/immeubles', [\App\Http\Controllers\Api\ImmeubleController::class, 'index'])->middleware('permission:immeubles.view');
+        Route::post('/immeubles', [\App\Http\Controllers\Api\ImmeubleController::class, 'store'])->middleware('permission:immeubles.create');
+        Route::get('/immeubles/{id}', [\App\Http\Controllers\Api\ImmeubleController::class, 'show'])->middleware('permission:immeubles.view');
+        Route::put('/immeubles/{id}', [\App\Http\Controllers\Api\ImmeubleController::class, 'update'])->middleware('permission:immeubles.edit');
+        Route::delete('/immeubles/{id}', [\App\Http\Controllers\Api\ImmeubleController::class, 'destroy'])->middleware('permission:immeubles.delete');
 
         // Locataires
-        Route::apiResource('locataires', \App\Http\Controllers\Api\LocataireController::class);
+        Route::get('/locataires', [\App\Http\Controllers\Api\LocataireController::class, 'index'])->middleware('permission:locataires.view');
+        Route::post('/locataires', [\App\Http\Controllers\Api\LocataireController::class, 'store'])->middleware('permission:locataires.create');
+        Route::get('/locataires/{id}', [\App\Http\Controllers\Api\LocataireController::class, 'show'])->middleware('permission:locataires.view');
+        Route::put('/locataires/{id}', [\App\Http\Controllers\Api\LocataireController::class, 'update'])->middleware('permission:locataires.edit');
+        Route::delete('/locataires/{id}', [\App\Http\Controllers\Api\LocataireController::class, 'destroy'])->middleware('permission:locataires.delete');
 
         // Agency Settings
         Route::get('agency/settings', [\App\Http\Controllers\Api\AgenceSettingsController::class, 'show']);
@@ -130,7 +159,15 @@ Route::prefix('v1')->group(function () {
         Route::get('/agence/profile', [AgenceController::class, 'show']);
         Route::put('/agence/settings', [AgenceController::class, 'updateSettings']);
         Route::post('/agence/logo', [AgenceController::class, 'uploadLogo']);
+        Route::get('/agence/logo', [AgenceController::class, 'uploadLogo']); // Fix: should be POST/PUT usually
+        Route::post('/agence/logo', [AgenceController::class, 'uploadLogo']);
         Route::delete('/agence/logo', [AgenceController::class, 'deleteLogo']);
+
+        // Team Management
+        Route::get('/agence/equipe', [\App\Http\Controllers\Api\TeamController::class, 'index']);
+        Route::post('/agence/equipe', [\App\Http\Controllers\Api\TeamController::class, 'store']);
+        Route::put('/agence/equipe/{id}', [\App\Http\Controllers\Api\TeamController::class, 'update']);
+        Route::delete('/agence/equipe/{id}', [\App\Http\Controllers\Api\TeamController::class, 'destroy']);
 
         // --- Construction Module Routes (MVP) ---
 
@@ -157,6 +194,7 @@ Route::prefix('v1')->group(function () {
 
             // Plans management
             Route::get('/plans', [AdminController::class, 'plans']);
+            Route::get('/plans/{id}', [AdminController::class, 'showPlan']);
             Route::post('/plans', [AdminController::class, 'storePlan']);
             Route::put('/plans/{id}', [AdminController::class, 'updatePlan']);
 
