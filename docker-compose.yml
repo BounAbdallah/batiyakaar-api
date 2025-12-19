@@ -33,6 +33,8 @@ services:
       DB_PASSWORD: sUrjw1aA7j3gr7q7lidC
     volumes:
       - .:/var/www
+    ports:
+      - "9000:9000"
 
   # Nginx
   nginx-noorimmo:
