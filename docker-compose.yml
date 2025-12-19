@@ -1,3 +1,5 @@
+version: "3.9"
+
 services:
   # MySQL Database
   db-noorimmo:
@@ -25,12 +27,12 @@ services:
     depends_on:
       - db-noorimmo
     environment:
-      - DB_HOST=db-noorimmo
-      - DB_DATABASE=noorimmo
-      - DB_USERNAME=BinAbdallah
-      - DB_PASSWORD=sUrjw1aA7j3gr7q7lidC
+      DB_HOST: db-noorimmo
+      DB_DATABASE: noorimmo
+      DB_USERNAME: BinAbdallah
+      DB_PASSWORD: sUrjw1aA7j3gr7q7lidC
     ports:
-      - "8000:9000"
+      - "9000:9000"   
     volumes:
       - .:/var/www
 
