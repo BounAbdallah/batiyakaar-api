@@ -16,7 +16,7 @@ services:
     volumes:
       - db-noor-immo-data:/var/lib/mysql
 
-  # Laravel API
+  # PHP-FPM for Laravel
   api-noor-immo:
     build:
       context: .
@@ -31,10 +31,24 @@ services:
       DB_DATABASE: noorimmo
       DB_USERNAME: BinAbdallah
       DB_PASSWORD: sUrjw1aA7j3gr7q7lidC
-    ports:
-      - "9000:9000"   
     volumes:
       - .:/var/www
+
+  # Nginx
+  nginx-noorimmo:
+    image: nginx:latest
+    container_name: noorimmo-nginx
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - api-noor-immo
+    volumes:
+      - ./public:/var/www/public
+      - ./nginx/conf.d:/etc/nginx/conf.d
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+      - ./logs/nginx:/var/log/nginx
 
 volumes:
   db-noor-immo-data:
