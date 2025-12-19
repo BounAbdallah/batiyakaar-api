@@ -1,9 +1,9 @@
 {
     "info": {
-        "name": "Bâti Yakaar API",
-        "description": "API complète pour la plateforme Bâti Yakaar - Gestion de construction et location immobilière",
+        "name": "Noor-Immo API",
+        "description": "API complète pour la plateforme Noor-Immo - Gestion de construction et location immobilière",
         "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-        "_exporter_id": "batiyakaar"
+        "_exporter_id": "noor_immo"
     },
     "auth": {
         "type": "bearer",

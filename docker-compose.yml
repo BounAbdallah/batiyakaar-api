@@ -1,0 +1,38 @@
+services:
+  # MySQL Database
+  db-noorimmo:
+    image: mysql:8.0
+    container_name: noorimmo-db
+    restart: always
+    environment:
+      MYSQL_DATABASE: noorimmo
+      MYSQL_ROOT_PASSWORD: sUrjw1aA7j3gr7q7lidC
+      MYSQL_PASSWORD: sUrjw1aA7j3gr7q7lidC
+      MYSQL_USER: BinAbdallah
+    ports:
+      - "3306:3306"
+    volumes:
+      - db-noor-immo-data:/var/lib/mysql
+
+  # Laravel API
+  api-noor-immo:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: noor-immo-api
+    restart: always
+    working_dir: /var/www
+    depends_on:
+      - db-noorimmo
+    environment:
+      - DB_HOST=db-noorimmo
+      - DB_DATABASE=noorimmo
+      - DB_USERNAME=BinAbdallah
+      - DB_PASSWORD=sUrjw1aA7j3gr7q7lidC
+    ports:
+      - "8000:9000"
+    volumes:
+      - .:/var/www
+
+volumes:
+  db-noor-immo-data:

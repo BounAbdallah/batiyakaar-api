@@ -31,7 +31,7 @@ read -sp "Mot de passe MySQL: " DB_PASSWORD
 echo ""
 
 # Nom de la base de données
-DB_NAME="batiyakaar"
+DB_NAME="noor_immo"
 
 # Créer la base de données
 echo ""

@@ -161,12 +161,12 @@
                 contacter.</p>
 
             <p>Cordialement,<br>
-                <strong>L'équipe Batiyakaar</strong>
+                <strong>L'équipe Noor-Immo</strong>
             </p>
         </div>
 
         <div class="footer">
-            <p>© {{ date('Y') }} Batiyakaar - Système de gestion immobilière</p>
+            <p>© {{ date('Y') }} Noor-Immo - Système de gestion immobilière</p>
             <p>Cet email a été envoyé à {{ $customRequest->email }}</p>
         </div>
     </div>

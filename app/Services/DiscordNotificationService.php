@@ -76,7 +76,7 @@ class DiscordNotificationService
                 ],
             ],
             'footer' => [
-                'text' => 'Batiyakaar - Système de gestion immobilière'
+                'text' => 'Noor-Immo - Système de gestion immobilière'
             ],
             'timestamp' => now()->toIso8601String()
         ];
@@ -146,7 +146,7 @@ class DiscordNotificationService
                 ],
             ],
             'footer' => [
-                'text' => 'Batiyakaar - Système de gestion immobilière'
+                'text' => 'Noor-Immo - Système de gestion immobilière'
             ],
             'timestamp' => now()->toIso8601String()
         ];

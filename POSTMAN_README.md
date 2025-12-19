@@ -4,7 +4,7 @@
 
 1. Ouvrir Postman
 2. Cliquer sur **Import**
-3. Sélectionner le fichier `Batiyakaar-API.postman_collection.json`
+3. Sélectionner le fichier `Noor-Immo-API.postman_collection.json`
 4. La collection sera importée avec tous les endpoints
 
 ## 🔧 Configuration

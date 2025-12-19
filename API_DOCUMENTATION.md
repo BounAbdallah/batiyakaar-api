@@ -66,7 +66,7 @@ php artisan key:generate
 DB_CONNECTION=mysql
 DB_HOST=127.0.0.1
 DB_PORT=3306
-DB_DATABASE=batiyakaar
+DB_DATABASE=noor_immo
 DB_USERNAME=root
 DB_PASSWORD=
 
@@ -97,7 +97,7 @@ APP_URL=http://localhost:8000
 DB_CONNECTION=mysql
 DB_HOST=127.0.0.1
 DB_PORT=3306
-DB_DATABASE=batiyakaar
+DB_DATABASE=noor_immo
 DB_USERNAME=root
 DB_PASSWORD=
 
@@ -398,7 +398,7 @@ curl -X GET "http://localhost:8000/api/v1/biens?statut=disponible&type=apparteme
 
 1. Ouvrir Postman
 2. Cliquer sur **Import**
-3. Sélectionner `Batiyakaar-API.postman_collection.json`
+3. Sélectionner `Noor-Immo-API.postman_collection.json`
 4. La collection sera importée avec tous les endpoints
 
 ### Variables
@@ -458,7 +458,7 @@ php artisan route:clear
 ## 🤝 Support
 
 Pour toute question ou problème:
-- Email: support@batiyakaar.com
+- Email: support@noor-immo.com
 - Documentation: http://localhost:8000/api/documentation
 
 ---

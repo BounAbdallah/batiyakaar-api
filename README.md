@@ -1,6 +1,6 @@
-# Bâti Yakaar API
+# Noor-Immo API
 
-API Backend Laravel pour la plateforme PropTech Bâti Yakaar - Gestion des investissements immobiliers de la diaspora sénégalaise.
+API Backend Laravel pour la plateforme PropTech Noor-Immo - Gestion des investissements immobiliers de la diaspora sénégalaise.
 
 ## 🚀 Technologies
 
@@ -43,14 +43,14 @@ API Backend Laravel pour la plateforme PropTech Bâti Yakaar - Gestion des inves
    DB_CONNECTION=mysql
    DB_HOST=127.0.0.1
    DB_PORT=3306
-   DB_DATABASE=batiyakaar
+   DB_DATABASE=noor_immo
    DB_USERNAME=root
    DB_PASSWORD=votre_mot_de_passe
    ```
 
 5. **Créer la base de données**
    ```bash
-   mysql -u root -p -e "CREATE DATABASE batiyakaar CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+   mysql -u root -p -e "CREATE DATABASE noor_immo CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
    ```
 
 6. **Exécuter les migrations**
@@ -228,7 +228,7 @@ php artisan test --coverage
 
 ## 📄 Licence
 
-Propriétaire - Bâti Yakaar © 2024
+Propriétaire - Noor-Immo © 2024
 
 ## 👥 Équipe
 
@@ -236,4 +236,4 @@ Développé pour la diaspora sénégalaise 🇸🇳
 
 ---
 
-**Bâti Yakaar** - Construire la Confiance, Gérer l'Avenir
+**Noor-Immo** - Construire la Confiance, Gérer l'Avenir

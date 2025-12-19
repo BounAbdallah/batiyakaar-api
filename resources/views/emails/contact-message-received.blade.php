@@ -82,7 +82,7 @@
         </div>
 
         <div class="content">
-            <p>Vous avez reçu un nouveau message via le formulaire de contact du site Batiyakaar.</p>
+            <p>Vous avez reçu un nouveau message via le formulaire de contact du site Noor-Immo.</p>
 
             <div class="info-block">
                 <p><strong>De :</strong> {{ $contactMessage->prenom }} {{ $contactMessage->nom }}</p>
@@ -108,7 +108,7 @@
         </div>
 
         <div class="footer">
-            <p>© {{ date('Y') }} Batiyakaar - Système de gestion immobilière</p>
+            <p>© {{ date('Y') }} Noor-Immo - Système de gestion immobilière</p>
             <p>Ce message a été envoyé automatiquement depuis le formulaire de contact</p>
         </div>
     </div>

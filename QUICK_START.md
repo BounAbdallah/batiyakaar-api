@@ -1,4 +1,4 @@
-# Bâti Yakaar API - Guide de Démarrage Rapide
+# Noor-Immo API - Guide de Démarrage Rapide
 
 ## ⚡ Démarrage en 5 minutes
 
@@ -14,7 +14,7 @@ php artisan key:generate
 
 Éditer `.env`:
 ```env
-DB_DATABASE=batiyakaar
+DB_DATABASE=noor_immo
 DB_USERNAME=root
 DB_PASSWORD=
 ```
@@ -60,7 +60,7 @@ curl -X GET http://localhost:8000/api/v1/projets \
 
 ## 📦 Postman (Recommandé)
 
-1. Importer `Batiyakaar-API.postman_collection.json`
+1. Importer `Noor-Immo-API.postman_collection.json`
 2. Exécuter **Authentication > Login**
 3. Le token est sauvegardé automatiquement
 4. Tester tous les autres endpoints !

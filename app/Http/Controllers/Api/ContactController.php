@@ -47,7 +47,7 @@ class ContactController extends Controller
 
         // Send email notification to admin
         try {
-            Mail::to(config('mail.admin_email', 'admin@batiyakaar.com'))
+            Mail::to(config('mail.admin_email', 'admin@noor-immo.com'))
                 ->send(new ContactMessageReceived($contactMessage));
         } catch (\Exception $e) {
             \Log::error('Failed to send contact email notification: ' . $e->getMessage());
@@ -212,7 +212,7 @@ class ContactController extends Controller
                 ],
             ],
             'footer' => [
-                'text' => 'Batiyakaar - Formulaire de contact'
+                'text' => 'Noor-Immo - Formulaire de contact'
             ],
             'timestamp' => now()->toIso8601String()
         ];
