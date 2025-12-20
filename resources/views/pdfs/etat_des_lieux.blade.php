@@ -137,25 +137,7 @@
 
 <body>
 
-    <!-- Header Info Agence -->
-    <div style="text-align: center; margin-bottom: 20px;">
-        @php
-            $logoPath = $etat->bail->agence->logo ? public_path('storage/logos/' . $etat->bail->agence->logo) : null;
-        @endphp
-        @if($logoPath && file_exists($logoPath))
-            <div style="margin-bottom: 10px;">
-                 <img src="{{ $logoPath }}" alt="Logo" style="max-height: 80px;">
-            </div>
-        @endif
-        <div class="bold" style="font-size: 14px; margin-bottom: 5px; text-transform: uppercase;">
-            {{ $etat->bail->agence->raison_sociale ?? 'AGENCE IMMOBILIERE' }}
-        </div>
-        <div>{{ $etat->bail->agence->adresse ?? '' }}</div>
-        <div>Tél: {{ $etat->bail->agence->user->telephone ?? '' }}</div>
-        <div>NINEA: {{ $etat->bail->agence->ninea ?? '................' }} - RCCM:
-            {{ $etat->bail->agence->rccm ?? '................' }}
-        </div>
-    </div>
+    @include('partials.agency_header', ['agence' => $etat->bail->agence])
 
     <div class="header">
         É T A T &nbsp; D E S &nbsp; L I E U X

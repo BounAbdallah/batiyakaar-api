@@ -9,7 +9,7 @@
         body {
             font-family: 'Times New Roman', serif;
             font-size: 11pt;
-            line-height: 1.4;
+            line-height: 1.3;
             color: #000;
         }
 
@@ -34,34 +34,34 @@
         }
 
         .header {
-            margin-bottom: 20px;
+            margin-bottom: 10px;
         }
 
         .title {
-            font-size: 14pt;
+            font-size: 13pt;
             font-weight: bold;
             text-align: center;
-            margin-bottom: 15px;
+            margin-bottom: 10px;
             text-decoration: underline;
         }
 
         .section-title {
             font-weight: bold;
             text-decoration: underline;
-            margin-top: 10px;
-            margin-bottom: 5px;
+            margin-top: 8px;
+            margin-bottom: 4px;
         }
 
         .agency-footer {
-            margin-top: 40px;
+            margin-top: 25px;
             font-size: 9pt;
             text-align: center;
             border-top: 1px solid #ccc;
-            padding-top: 10px;
+            padding-top: 8px;
         }
 
         .signatures {
-            margin-top: 40px;
+            margin-top: 25px;
             width: 100%;
         }
 
@@ -92,49 +92,52 @@
         }
 
         .header-logo {
-            margin-bottom: 20px;
+            margin-bottom: 10px;
             text-align: center;
-            padding-bottom: 10px;
+            padding-bottom: 5px;
             border-bottom: 1px solid #ddd;
         }
 
         .header-logo img {
-            max-height: 70px;
-            max-width: 220px;
+            max-height: 60px;
+            max-width: 200px;
+        }
+
+        .property-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+            font-size: 10pt;
+        }
+
+        .property-table th,
+        .property-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+
+        .property-table th {
+            background-color: #f9f9f9;
+            width: 30%;
+            font-weight: bold;
+        }
+
+        p {
+            margin-top: 0;
+            margin-bottom: 6px;
         }
     </style>
 </head>
 
 <body>
     @php
-        ini_set('memory_limit', '256M');
+        ini_set('memory_limit', '512M');
     @endphp
 
-    @if($bien->agence && $bien->agence->logo)
-        @php
-            $logoSrc = null;
-            try {
-                $logoPath = storage_path('app/public/logos/' . $bien->agence->logo);
-                if (file_exists($logoPath)) {
-                    $logoData = file_get_contents($logoPath);
-                    if ($logoData !== false) {
-                        $logoMime = mime_content_type($logoPath);
-                        $logoSrc = 'data:' . $logoMime . ';base64,' . base64_encode($logoData);
-                    }
-                }
-            } catch (\Throwable $e) {
-                \Illuminate\Support\Facades\Log::error("Logo loading error in mandat: " . $e->getMessage());
-                $logoSrc = null;
-            }
-        @endphp
-        @if(isset($logoSrc) && $logoSrc)
-            <div class="header-logo">
-                <img src="{{ $logoSrc }}" alt="Logo">
-            </div>
-        @endif
-    @endif
+    @include('partials.agency_header', ['agence' => $bien->agence])
 
-    <div class="header text-center">
+    <div class="header text-center" style="margin-top: 20px;">
         <h1 class="title">MANDAT DE GERANCE</h1>
     </div>
 
@@ -145,7 +148,7 @@
             <strong>Le mandant :</strong><br>
             @if($bien->bailleur && $bien->bailleur->user)
                 Monsieur/Madame <strong>{{ $bien->bailleur->user->prenom }} {{ $bien->bailleur->user->nom }}</strong>,
-                propriétaire de l’immeuble sise à {{ $bien->adresse }}
+                propriétaire du bien désigné ci-après
                 @if($bien->bailleur->user->cin)
                     , titulaire de la CIN N° {{ $bien->bailleur->user->cin }}
                 @endif
@@ -176,8 +179,54 @@
 
         <p>
             le mandant confère par la présente au mandataire, qui l’accepte, mandat d’administrer le bien
-            sis à {{ $bien->adresse }} (voir annexe document descriptif immeuble).
+            désigné ci-dessous :
         </p>
+
+        <div style="margin-top: 15px; margin-bottom: 15px;">
+            <div class="section-title">DESCRIPTIF DU BIEN</div>
+            <table class="property-table">
+                <tr>
+                    <th>Référence</th>
+                    <td>{{ $bien->reference }}</td>
+                </tr>
+                <tr>
+                    <th>Type de Bien</th>
+                    <td class="uppercase">{{ $bien->type }}</td>
+                </tr>
+                <tr>
+                    <th>Adresse</th>
+                    <td>{{ $bien->adresse }}</td>
+                </tr>
+                @if($bien->immeuble)
+                    <tr>
+                        <th>Immeuble</th>
+                        <td>{{ $bien->immeuble->nom }}</td>
+                    </tr>
+                @endif
+                @if($bien->etage)
+                    <tr>
+                        <th>Étage</th>
+                        <td>{{ $bien->etage->nom }}</td>
+                    </tr>
+                @endif
+                <tr>
+                    <th>Caractéristiques</th>
+                    <td>
+                        {{ $bien->nombre_pieces }} Pièce(s) | Surface : {{ $bien->surface }} m²
+                    </td>
+                </tr>
+                <tr>
+                    <th>Loyer Mensuel</th>
+                    <td>{{ number_format($bien->loyer_mensuel, 0, ',', ' ') }} CFA</td>
+                </tr>
+                @if($bien->description)
+                    <tr>
+                        <th>Description</th>
+                        <td>{{ $bien->description }}</td>
+                    </tr>
+                @endif
+            </table>
+        </div>
 
         <div class="checkbox-list">
             <strong>GERANCE TOTALE ( Recouvrement, déclaration impot, réparation et rénovation)</strong><br>
@@ -273,7 +322,8 @@
         <p><strong>Article 16 :</strong><br>
             s’agissant de la gérance, l’agence {{ $bien->agence->raison_sociale ?? 'AGENCE' }} percevra à titre
             d’honoraires
-            d’agence le taux de {{ $bien->agence->taux_commission_agence ?? '10' }}% sur les sommes collectés pour
+            d’agence le taux de {{ $bien->taux_commission ?? ($bien->agence->taux_commission_agence ?? '10') }}% sur les
+            sommes collectés pour
             chaque mois
             le mandat est renouvelable par tacite reconduction.</p>
 

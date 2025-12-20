@@ -79,34 +79,10 @@
 </head>
 <body>
     @php
-        // Increase memory limit for PDF generation
-        ini_set('memory_limit', '256M');
+        ini_set('memory_limit', '512M');
     @endphp
-    
-    @if($paiement->bail->agence && $paiement->bail->agence->logo)
-        @php
-            $logoPath = storage_path('app/public/logos/' . $paiement->bail->agence->logo);
-            $logoSrc = null;
-            if (file_exists($logoPath)) {
-                try {
-                    $imageData = file_get_contents($logoPath);
-                    $mimeType = mime_content_type($logoPath);
-                    // Only encode if file is reasonably small (< 100KB)
-                    if (strlen($imageData) < 102400) {
-                        $logoSrc = 'data:' . $mimeType . ';base64,' . base64_encode($imageData);
-                    }
-                    unset($imageData); // Free memory
-                } catch (\Exception $e) {
-                    // Skip logo if error
-                }
-            }
-        @endphp
-        @if($logoSrc)
-            <div class="header-logo">
-                <img src="{{ $logoSrc }}" alt="Logo">
-            </div>
-        @endif
-    @endif
+
+    @include('partials.agency_header', ['agence' => $paiement->bail->agence])
 
     <h1 class="title">RECONNAISSANCE DE DETTE</h1>
 

@@ -101,41 +101,7 @@
         ini_set('memory_limit', '256M');
     @endphp
 
-    @if($paiement->bail->agence)
-        @if($paiement->bail->agence->logo)
-            @php
-                $logoSrc = null;
-                try {
-                    $logoPath = storage_path('app/public/logos/' . $paiement->bail->agence->logo);
-                    if (file_exists($logoPath)) {
-                        $logoData = file_get_contents($logoPath);
-                        if ($logoData !== false) {
-                            $logoMime = mime_content_type($logoPath);
-                            $logoSrc = 'data:' . $logoMime . ';base64,' . base64_encode($logoData);
-                        }
-                    }
-                } catch (\Throwable $e) {
-                    \Illuminate\Support\Facades\Log::error("Logo loading error in quittance: " . $e->getMessage());
-                    $logoSrc = null;
-                }
-            @endphp
-        @endif
-
-        <div class="watermark">{{ $paiement->bail->agence->raison_sociale }}</div>
-
-        <div class="agency-header">
-            @if(isset($logoSrc) && $logoSrc)
-                <div style="text-align: center; margin-bottom: 10px;">
-                    <img src="{{ $logoSrc }}" alt="Logo" style="max-height: 60px; max-width: 200px;">
-                </div>
-            @endif
-            <div class="agency-name">{{ $paiement->bail->agence->raison_sociale }}</div>
-            <div class="agency-details">
-                {{ $paiement->bail->agence->adresse }}<br>
-                NINEA: {{ $paiement->bail->agence->ninea }} | RCCM: {{ $paiement->bail->agence->rccm }}
-            </div>
-        </div>
-    @endif
+    @include('partials.agency_header', ['agence' => $paiement->bail->agence])
 
     <div class="header">
         <div class="title">QUITTANCE DE LOYER</div>

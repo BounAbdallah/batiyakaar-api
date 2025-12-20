@@ -168,44 +168,10 @@
 
 <body>
     @php
-        ini_set('memory_limit', '256M');
+        ini_set('memory_limit', '512M');
     @endphp
 
-    {{-- Modern Header: Logo + Agency Info --}}
-    <div class="top-header">
-        <div class="logo-section">
-            @if($bail->agence && $bail->agence->logo)
-                @php
-                    $logoPath = storage_path('app/public/logos/' . $bail->agence->logo);
-                    $logoSrc = null;
-                    if (file_exists($logoPath)) {
-                        try {
-                            $imageData = file_get_contents($logoPath);
-                            $mimeType = mime_content_type($logoPath);
-                            if (strlen($imageData) < 102400) {
-                                $logoSrc = 'data:' . $mimeType . ';base64,' . base64_encode($imageData);
-                            }
-                            unset($imageData);
-                        } catch (\Exception $e) {
-                            // Skip logo if error
-                        }
-                    }
-                @endphp
-                @if($logoSrc)
-                    <img src="{{ $logoSrc }}" alt="Logo">
-                @endif
-            @endif
-        </div>
-
-        @if($bail->agence)
-            <div class="agency-info">
-                <div class="agency-name">{{ $bail->agence->raison_sociale }}</div>
-                {{ $bail->agence->adresse }}<br>
-                {{ $bail->agence->user->telephone ?? '' }}<br>
-                <span style="font-size: 9pt;">N.I.N.E.A : {{ $bail->agence->ninea }} / RC : {{ $bail->agence->rccm }}</span>
-            </div>
-        @endif
-    </div>
+    @include('partials.agency_header', ['agence' => $bail->agence])
 
     {{-- Contract Title --}}
     <div class="contract-title">

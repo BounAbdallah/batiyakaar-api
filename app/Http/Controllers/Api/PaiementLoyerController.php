@@ -236,7 +236,8 @@ class PaiementLoyerController extends Controller
         if ($bail->agence_id) {
             $agence = $bail->agence;
             $taux_plateforme = $agence->taux_commission_plateforme ?? 5.00;
-            $taux_agence = $agence->taux_commission_agence ?? 10.00;
+            // Check if property has a specific commission, fallback to agence default
+            $taux_agence = $bail->bien->taux_commission ?? ($agence->taux_commission_agence ?? 10.00);
         }
 
         // Calculate amounts based on percentages
@@ -330,7 +331,7 @@ class PaiementLoyerController extends Controller
      */
     public function downloadQuittance(string $id)
     {
-        $paiement = PaiementLoyer::with(['bail.locataire.user', 'bail.bien.bailleur.user', 'bail.agence', 'quittance'])->findOrFail($id);
+        $paiement = PaiementLoyer::with(['bail.locataire.user', 'bail.bien.bailleur.user', 'bail.agence', 'bail.agence.user', 'quittance'])->findOrFail($id);
 
         if (!$paiement->quittance) {
             // Generate if missing logic could be here, but usually done at store
@@ -352,7 +353,8 @@ class PaiementLoyerController extends Controller
         $paiement = PaiementLoyer::with([
             'bail.bien.bailleur.user',
             'bail.locataire.user',
-            'bail.agence'
+            'bail.agence',
+            'bail.agence.user'
         ])->findOrFail($id);
 
         // Calculate debt amount
@@ -372,7 +374,8 @@ class PaiementLoyerController extends Controller
         $paiement = PaiementLoyer::with([
             'bail.bien.bailleur.user',
             'bail.locataire.user',
-            'bail.agence'
+            'bail.agence',
+            'bail.agence.user'
         ])->findOrFail($id);
 
         // Calculate debt amount

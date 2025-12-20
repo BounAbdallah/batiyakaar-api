@@ -177,7 +177,7 @@ class BailController extends Controller
      */
     public function downloadContract($id)
     {
-        $bail = Bail::with(['bien.bailleur.user', 'locataire.user', 'agence.user'])->findOrFail($id);
+        $bail = Bail::with(['bien.bailleur.user', 'locataire.user', 'agence', 'agence.user'])->findOrFail($id);
 
         $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdfs.contrat_location', compact('bail'));
 
@@ -200,7 +200,7 @@ class BailController extends Controller
         // Increase memory limit for PDF generation with images
         ini_set('memory_limit', '512M');
 
-        $bail = Bail::with(['bien.bailleur.user', 'locataire.user', 'agence.user'])->findOrFail($id);
+        $bail = Bail::with(['bien.bailleur.user', 'locataire.user', 'agence', 'agence.user'])->findOrFail($id);
 
         $pdf = Pdf::loadView('pdfs.contrat_location', compact('bail'));
 
@@ -215,7 +215,8 @@ class BailController extends Controller
         $bail = Bail::with([
             'bien.bailleur.user',
             'locataire.user',
-            'agence'
+            'agence',
+            'agence.user'
         ])->findOrFail($id);
 
         // Get debt amount from query params or use monthly rent
@@ -411,6 +412,7 @@ class BailController extends Controller
         $bail = Bail::with([
             'bien.bailleur.user',
             'locataire.user',
+            'agence',
             'agence.user'
         ])->findOrFail($id);
 

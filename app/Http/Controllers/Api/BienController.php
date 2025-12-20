@@ -137,11 +137,12 @@ class BienController extends Controller
             'etage_id' => 'nullable|exists:etages,id',
             'projet_construction_id' => 'nullable|exists:projets_construction,id',
             'reference' => 'required|string|unique:biens,reference',
-            'adresse' => 'required|string',
+            'adresse' => 'required_without:immeuble_id|nullable|string',
             'type' => 'required|in:appartement,maison,studio,villa,commerce,terrain',
             'nombre_pieces' => 'nullable|integer|min:0',
             'surface' => 'nullable|numeric|min:0',
             'loyer_mensuel' => 'required|numeric|min:0',
+            'taux_commission' => 'nullable|numeric|min:0|max:100',
         ]);
 
         $validated['statut'] = 'disponible';
@@ -174,6 +175,13 @@ class BienController extends Controller
                         ], 403);
                     }
                 }
+            }
+        }
+
+        if (empty($validated['adresse']) && !empty($validated['immeuble_id'])) {
+            $building = \App\Models\Immeuble::find($validated['immeuble_id']);
+            if ($building) {
+                $validated['adresse'] = $building->adresse;
             }
         }
 
@@ -220,15 +228,23 @@ class BienController extends Controller
 
         $validated = $request->validate([
             'reference' => 'sometimes|string|unique:biens,reference,' . $id,
-            'adresse' => 'sometimes|string',
+            'adresse' => 'sometimes|nullable|string',
             'type' => 'sometimes|in:appartement,maison,studio,villa,commerce,terrain',
             'nombre_pieces' => 'nullable|integer|min:0',
             'surface' => 'nullable|numeric|min:0',
             'loyer_mensuel' => 'sometimes|numeric|min:0',
+            'taux_commission' => 'nullable|numeric|min:0|max:100',
             'statut' => 'sometimes|in:disponible,loue,en_travaux,maintenance,indisponible,vendu',
             'immeuble_id' => 'nullable|exists:immeubles,id',
             'etage_id' => 'nullable|exists:etages,id',
         ]);
+
+        if (empty($validated['adresse']) && !empty($validated['immeuble_id'])) {
+            $building = \App\Models\Immeuble::find($validated['immeuble_id']);
+            if ($building) {
+                $validated['adresse'] = $building->adresse;
+            }
+        }
 
         $bien->update($validated);
 
@@ -271,24 +287,18 @@ class BienController extends Controller
         }
         // Admin gets pass
     }
-    /**
-     * Download the management mandate (Mandat de Gérance)
-     */
     public function downloadMandat($id)
     {
-        $bien = Bien::with(['bailleur.user', 'agence.user'])->findOrFail($id);
+        $bien = Bien::with(['bailleur.user', 'agence', 'agence.user'])->findOrFail($id);
 
         $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdfs.mandat_gerance', compact('bien'));
 
         return $pdf->download('mandat_gerance_' . $bien->reference . '.pdf');
     }
 
-    /**
-     * View the management mandate (Mandat de Gérance)
-     */
     public function viewMandat($id)
     {
-        $bien = Bien::with(['bailleur.user', 'agence.user'])->findOrFail($id);
+        $bien = Bien::with(['bailleur.user', 'agence', 'agence.user'])->findOrFail($id);
 
         $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdfs.mandat_gerance', compact('bien'));
 

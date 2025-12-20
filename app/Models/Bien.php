@@ -20,6 +20,7 @@ class Bien extends Model
         'nombre_pieces',
         'surface',
         'loyer_mensuel',
+        'taux_commission',
         'statut',
         'immeuble_id',
         'etage_id',
