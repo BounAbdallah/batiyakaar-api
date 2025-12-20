@@ -272,33 +272,100 @@ class PaiementLoyerController extends Controller
     }
 
     /**
-     * Get all unpaid and partial payments with debt calculation - filtered by role
+     * Get all unpaid and partial payments + Active Leases with NO payment for current month
      */
     public function getUnpaidRents(Request $request)
     {
         $user = $request->user();
 
-        $query = PaiementLoyer::with([
+        // 1. Identify context (Agency/Landlord)
+        $agencyId = null;
+        $landlordId = null;
+
+        if ($user->user_type === 'agence') {
+            $agencyId = $user->agence ? $user->agence->id : $user->agence_id;
+        } elseif ($user->user_type === 'bailleur' && $user->bailleur) {
+            $landlordId = $user->bailleur->id;
+        }
+
+        // 2. Fetch existing debts (Partial/Unpaid entries in DB)
+        $queryDbDebts = PaiementLoyer::with([
             'bail.bien',
             'bail.locataire.user',
             'bail.agence'
         ])
-            ->whereIn('statut', ['partiel', 'impaye'])
+            ->whereIn('statut', ['partiel', 'impaye', 'en_retard'])
             ->latest('date_paiement');
 
-        // Filter by user role
-        if ($user->user_type === 'agence' && $user->agence) {
-            $query->whereHas('bail', function ($q) use ($user) {
-                $q->where('agence_id', $user->agence->id);
+        if ($agencyId) {
+            $queryDbDebts->whereHas('bail', function ($q) use ($agencyId) {
+                $q->where('agence_id', $agencyId);
             });
-        } elseif ($user->user_type === 'bailleur' && $user->bailleur) {
-            $query->whereHas('bail.bien', function ($q) use ($user) {
-                $q->where('bailleur_id', $user->bailleur->id);
+        } elseif ($landlordId) {
+            $queryDbDebts->whereHas('bail.bien', function ($q) use ($landlordId) {
+                $q->where('bailleur_id', $landlordId);
             });
         }
 
-        // Group by bail to calculate total debt per lease
-        $paiements = $query->get()->groupBy('bail_id')->map(function ($payments) {
+        // Group DB debts by bail
+        $dbDebts = $queryDbDebts->get()->groupBy('bail_id');
+
+
+        // 3. Find Active Leases that missed current month payment
+        $leasesQuery = \App\Models\Bail::with(['bien', 'locataire.user', 'agence'])
+            ->where('statut', 'actif');
+
+        if ($agencyId) {
+            $leasesQuery->where('agence_id', $agencyId);
+        } elseif ($landlordId) {
+            $leasesQuery->whereHas('bien', function ($q) use ($landlordId) {
+                $q->where('bailleur_id', $landlordId);
+            });
+        }
+
+        $activeLeases = $leasesQuery->get();
+        $missingPayments = collect();
+
+        foreach ($activeLeases as $bail) {
+            // Check if this bail already has a 'paye' or 'partiel' payment for current month
+            // We also check if it's already in $dbDebts to avoid duplication (though dbDebts captures 'partiel'/'impaye')
+
+            // If it's in dbDebts, it means there is a record (likely partial), so we don't treat it as "missing from scratch"
+            if ($dbDebts->has($bail->id)) {
+                continue;
+            }
+
+            // Check DB for any payment this month
+            $hasPaymentThisMonth = PaiementLoyer::where('bail_id', $bail->id)
+                ->whereYear('date_paiement', now()->year)
+                ->whereMonth('date_paiement', now()->month)
+                ->exists();
+
+            if (!$hasPaymentThisMonth) {
+                // Determine due date (usually 5th of month or start of lease day)
+                // For simplicity: date_debut day or 1st of month
+                $dueDate = now()->setDay(1);
+
+                // Add to missing list
+                $missingPayments->push([
+                    'bail_id' => $bail->id,
+                    'bien' => $bail->bien,
+                    'locataire' => $bail->locataire,
+                    'loyer_mensuel' => $bail->loyer_mensuel,
+                    'montant_paye' => 0,
+                    'montant_attendu' => $bail->loyer_mensuel,
+                    'dette' => $bail->loyer_mensuel,
+                    'paiements' => [], // Empty array as no record exists
+                    'derniere_periode' => null, // No last payment
+                    'periode_debut' => $dueDate->format('Y-m-d'),
+                    'periode_fin' => $dueDate->copy()->endOfMonth()->format('Y-m-d'),
+                    'is_virtual' => true // Flag to indicate generated debt
+                ]);
+            }
+        }
+
+        // 4. Transform DB debts to matching format
+        $formattedDbDebts = $dbDebts->map(function ($payments) {
             $bail = $payments->first()->bail;
             $totalPaye = $payments->sum('montant');
             $montantAttendu = $payments->first()->montant_attendu ?? $bail->loyer_mensuel;
@@ -317,12 +384,16 @@ class PaiementLoyerController extends Controller
                 'derniere_periode' => $firstPayment->periode_debut ?? $firstPayment->date_paiement,
                 'periode_debut' => $firstPayment->periode_debut,
                 'periode_fin' => $firstPayment->periode_fin,
+                'is_virtual' => false
             ];
         })->values();
 
+        // 5. Merge and Return
+        $allDebts = $formattedDbDebts->merge($missingPayments);
+
         return response()->json([
             'success' => true,
-            'data' => $paiements
+            'data' => $allDebts
         ]);
     }
 

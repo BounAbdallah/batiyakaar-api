@@ -13,7 +13,18 @@ class EtatDesLieuxController extends Controller
      */
     public function index(Request $request)
     {
+        $user = $request->user();
         $query = EtatDesLieux::with(['bail.bien', 'bail.locataire.user']);
+
+        // Scope to Agency
+        if ($user->user_type === 'agence') {
+            $agenceId = $user->agence ? $user->agence->id : $user->agence_id;
+            if ($agenceId) {
+                $query->whereHas('bail', function ($q) use ($agenceId) {
+                    $q->where('agence_id', $agenceId);
+                });
+            }
+        }
 
         if ($request->has('bail_id')) {
             $query->where('bail_id', $request->bail_id);
