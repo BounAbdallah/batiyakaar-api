@@ -13,7 +13,7 @@ return new class extends Migration {
     {
         // Using raw SQL to modify ENUM because Doctrine DBAL might not be installed or configured for ENUMs
         try {
-            DB::statement("ALTER TABLE users MODIFY COLUMN user_type ENUM('bailleur', 'agence', 'entrepreneur', 'fournisseur', 'locataire', 'admin') NOT NULL");
+            DB::statement("ALTER TABLE users MODIFY COLUMN user_type ENUM('bailleur', 'agence', 'entrepreneur', 'fournisseur', 'locataire', 'admin', 'technicien') NOT NULL");
         } catch (\Exception $e) {
             // SQLite does not support MODIFY COLUMN
         }

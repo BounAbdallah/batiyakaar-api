@@ -13,9 +13,10 @@ return new class extends Migration {
         Schema::create('etat_des_lieuxes', function (Blueprint $table) {
             $table->id();
             $table->foreignId('bail_id')->constrained('baux')->onDelete('cascade');
-            $table->enum('type', ['entrant', 'sortant']);
-            $table->date('date_etat_des_lieux');
-            $table->text('observations')->nullable();
+            $table->enum('type', ['entree', 'sortie']);
+            $table->date('date_etat');
+            $table->text('remarques')->nullable();
+            $table->string('effectue_par')->nullable();
             $table->json('content')->nullable(); // Structured data for rooms, keys, meters
             $table->json('documents')->nullable(); // Photos, PDFs
             $table->timestamps();

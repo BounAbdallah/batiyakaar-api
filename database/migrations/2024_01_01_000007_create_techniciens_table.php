@@ -10,9 +10,11 @@ return new class extends Migration {
         Schema::create('techniciens', function (Blueprint $table) {
             $table->id();
             $table->foreignId('agence_id')->constrained('agences')->onDelete('cascade');
+            $table->foreignId('user_id')->nullable()->constrained('users')->onDelete('cascade');
             $table->string('nom');
             $table->string('telephone', 20);
             $table->string('specialite');
+            $table->boolean('disponible')->default(true);
             $table->timestamps();
 
             $table->index('agence_id');

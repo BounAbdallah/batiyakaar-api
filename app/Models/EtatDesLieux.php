@@ -14,8 +14,9 @@ class EtatDesLieux extends Model
     protected $fillable = [
         'bail_id',
         'type',
-        'date_etat_des_lieux',
-        'observations',
+        'date_etat',
+        'remarques',
+        'effectue_par',
         'content',
         'documents',
     ];
@@ -23,7 +24,7 @@ class EtatDesLieux extends Model
     protected function casts(): array
     {
         return [
-            'date_etat_des_lieux' => 'date',
+            'date_etat' => 'date',
             'content' => 'array',
             'documents' => 'array',
         ];

@@ -64,4 +64,21 @@ class Agence extends Model
     {
         return $this->hasMany(User::class, 'agence_id');
     }
+
+    // Helper methods for features
+    public function getFonctionnalitesDisponibles()
+    {
+        $abonnement = $this->abonnement()
+            ->where('statut', 'actif')
+            ->with('plan.fonctionnalitesActives')
+            ->first();
+
+        return $abonnement?->plan?->fonctionnalitesActives ?? collect();
+    }
+
+    public function hasFonctionnalite($code)
+    {
+        return $this->getFonctionnalitesDisponibles()
+            ->contains('code', $code);
+    }
 }

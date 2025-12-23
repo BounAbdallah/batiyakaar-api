@@ -217,7 +217,23 @@ Route::prefix('v1')->group(function () {
             Route::get('/contact-messages', [\App\Http\Controllers\Api\ContactController::class, 'index']);
             Route::get('/contact-messages/{id}', [\App\Http\Controllers\Api\ContactController::class, 'show']);
             Route::put('/contact-messages/{id}', [\App\Http\Controllers\Api\ContactController::class, 'update']);
+
+            // Features Management
+            Route::get('/fonctionnalites', [\App\Http\Controllers\Api\FonctionnaliteController::class, 'index']);
+            Route::post('/fonctionnalites', [\App\Http\Controllers\Api\FonctionnaliteController::class, 'store']);
+            Route::get('/fonctionnalites/{id}', [\App\Http\Controllers\Api\FonctionnaliteController::class, 'show']);
+            Route::put('/fonctionnalites/{id}', [\App\Http\Controllers\Api\FonctionnaliteController::class, 'update']);
+            Route::delete('/fonctionnalites/{id}', [\App\Http\Controllers\Api\FonctionnaliteController::class, 'destroy']);
+
+            // Plan Features Management
+            Route::get('/plans/{id}/fonctionnalites', [AdminController::class, 'getPlanFeatures']);
+            Route::put('/plans/{id}/fonctionnalites', [AdminController::class, 'updatePlanFeatures']);
+            Route::delete('/plans/{id}/fonctionnalites/{fonctionnaliteId}', [AdminController::class, 'removePlanFeature']);
         });
+
+        // User Features (Available to authenticated users)
+        Route::get('/user/fonctionnalites', [\App\Http\Controllers\Api\UserFonctionnaliteController::class, 'index']);
+        Route::get('/user/fonctionnalites/{code}/check', [\App\Http\Controllers\Api\UserFonctionnaliteController::class, 'check']);
 
     });
 

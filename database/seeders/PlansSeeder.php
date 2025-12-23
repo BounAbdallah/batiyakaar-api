@@ -70,12 +70,60 @@ class PlansSeeder extends Seeder
         ];
 
         foreach ($plans as $planData) {
-            Plan::updateOrCreate(
+            $plan = Plan::updateOrCreate(
                 ['nom' => $planData['nom']],
                 $planData
             );
+
+            // Associate features with plans
+            $this->associateFeaturesWithPlan($plan);
         }
 
-        $this->command->info('✓ 3 plans créés avec succès');
+        $this->command->info('✓ ' . count($plans) . ' plans créés avec succès');
+    }
+
+    private function associateFeaturesWithPlan($plan)
+    {
+        $featureMapping = [
+            'Starter' => [
+                'gestion_biens',
+                'gestion_baux',
+                'paiements_loyers',
+                'gestion_locataires',
+            ],
+            'Pro' => [
+                'gestion_biens',
+                'gestion_baux',
+                'paiements_loyers',
+                'gestion_locataires',
+                'gestion_bailleurs',
+                'gestion_immeubles',
+                'multi_utilisateurs',
+                'notifications_whatsapp',
+                'acces_bailleurs',
+            ],
+            'Enterprise' => [
+                'gestion_biens',
+                'gestion_baux',
+                'paiements_loyers',
+                'gestion_locataires',
+                'gestion_bailleurs',
+                'gestion_immeubles',
+                'etats_lieux',
+                'gestion_incidents',
+                'multi_utilisateurs',
+                'notifications_whatsapp',
+                'acces_locataires',
+                'acces_bailleurs',
+                'gestion_equipe',
+                'api_access',
+            ],
+        ];
+
+        if (isset($featureMapping[$plan->nom])) {
+            $featureCodes = $featureMapping[$plan->nom];
+            $featureIds = \App\Models\Fonctionnalite::whereIn('code', $featureCodes)->pluck('id');
+            $plan->fonctionnalites()->sync($featureIds);
+        }
     }
 }

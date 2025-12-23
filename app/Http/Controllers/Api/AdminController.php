@@ -265,4 +265,55 @@ class AdminController extends Controller
             'data' => $abonnement->load('plan')
         ]);
     }
+
+    // --- Plan Features Management ---
+
+    /**
+     * Get features for a specific plan
+     */
+    public function getPlanFeatures($id)
+    {
+        $plan = Plan::with('fonctionnalitesActives')->findOrFail($id);
+
+        return response()->json([
+            'success' => true,
+            'data' => $plan->fonctionnalitesActives
+        ]);
+    }
+
+    /**
+     * Update features for a specific plan
+     */
+    public function updatePlanFeatures(Request $request, $id)
+    {
+        $plan = Plan::findOrFail($id);
+
+        $validated = $request->validate([
+            'fonctionnalite_ids' => 'required|array',
+            'fonctionnalite_ids.*' => 'exists:fonctionnalites,id',
+        ]);
+
+        // Sync features with plan
+        $plan->fonctionnalites()->sync($validated['fonctionnalite_ids']);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Fonctionnalités du plan mises à jour avec succès',
+            'data' => $plan->load('fonctionnalitesActives')
+        ]);
+    }
+
+    /**
+     * Remove a feature from a plan
+     */
+    public function removePlanFeature($planId, $fonctionnaliteId)
+    {
+        $plan = Plan::findOrFail($planId);
+        $plan->fonctionnalites()->detach($fonctionnaliteId);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Fonctionnalité dissociée du plan avec succès'
+        ]);
+    }
 }

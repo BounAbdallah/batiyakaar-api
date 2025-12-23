@@ -128,4 +128,45 @@ class User extends Authenticatable
     {
         return "{$this->prenom} {$this->nom}";
     }
+
+    // Feature Access Methods
+    public function hasFonctionnalite($code)
+    {
+        // Admin has all features
+        if ($this->user_type === 'admin') {
+            return true;
+        }
+
+        // Check via agency (for agency owners and team members)
+        if ($this->user_type === 'agence') {
+            // Owner
+            return $this->agence?->hasFonctionnalite($code) ?? false;
+        } elseif ($this->agence_id) {
+            // Team member
+            return $this->employeurAgence?->hasFonctionnalite($code) ?? false;
+        }
+
+        return false;
+    }
+
+    public function getFonctionnalites()
+    {
+        // Admin gets all active features
+        if ($this->user_type === 'admin') {
+            return \App\Models\Fonctionnalite::actif()->parOrdre()->get();
+        }
+
+        // Agency owner
+        if ($this->user_type === 'agence') {
+            return $this->agence?->getFonctionnalitesDisponibles() ?? collect();
+        }
+
+        // Team member
+        if ($this->agence_id) {
+            return $this->employeurAgence?->getFonctionnalitesDisponibles() ?? collect();
+        }
+
+        return collect();
+    }
 }
+

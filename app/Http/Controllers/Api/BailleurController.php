@@ -191,26 +191,53 @@ class BailleurController extends Controller
      */
     public function show(string $id)
     {
-        $bailleur = Bailleur::with(['user', 'biens.baux.paiementsLoyer'])->findOrFail($id);
+        $authUser = \Illuminate\Support\Facades\Auth::user();
 
-        // Calculate Stats
+        // Load bailleur with relationships
+        $bailleur = Bailleur::with(['user'])->findOrFail($id);
+
+        // Filter biens by agency if user is agency type
+        if ($authUser->user_type === 'agence') {
+            $agenceId = $authUser->agence ? $authUser->agence->id : $authUser->agence_id;
+
+            // Only load biens that belong to this agency
+            $bailleur->load([
+                'biens' => function ($query) use ($agenceId) {
+                    $query->where('agence_id', $agenceId)->with('baux.paiementsLoyer');
+                }
+            ]);
+
+            // Verify this agency actually manages properties for this landlord
+            if ($bailleur->biens->isEmpty()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Vous n\'avez pas accès aux informations de ce bailleur'
+                ], 403);
+            }
+        } else {
+            // Admin or other types can see all properties
+            $bailleur->load(['biens.baux.paiementsLoyer']);
+        }
+
+        // Calculate Stats (only for properties managed by this agency)
         $stats = [];
+        $bienIds = $bailleur->biens->pluck('id');
 
         // Property counts
         $stats['total_properties'] = $bailleur->biens->count();
         $stats['rented_properties'] = $bailleur->biens->where('statut', 'loue')->count();
         $stats['available_properties'] = $bailleur->biens->where('statut', 'disponible')->count();
 
-        // Active leases
-        $activeLeases = \App\Models\Bail::whereIn('bien_id', $bailleur->biens->pluck('id'))
+        // Active leases (only for this agency's properties)
+        $activeLeases = \App\Models\Bail::whereIn('bien_id', $bienIds)
             ->where('statut', 'actif')
             ->get();
         $stats['active_leases'] = $activeLeases->count();
         $stats['expected_monthly_revenue'] = $activeLeases->sum('loyer_mensuel');
 
-        // Revenue calculations
-        $allPayments = \App\Models\PaiementLoyer::whereHas('bail.bien', function ($q) use ($bailleur) {
-            $q->where('bailleur_id', $bailleur->id);
+        // Revenue calculations (only for this agency's properties)
+        $allPayments = \App\Models\PaiementLoyer::whereHas('bail', function ($q) use ($bienIds) {
+            $q->whereIn('bien_id', $bienIds);
         })->where('statut', 'paye')->get();
 
         $stats['total_revenue'] = $allPayments->sum('montant');

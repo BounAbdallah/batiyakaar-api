@@ -57,6 +57,18 @@ class Plan extends Model
         );
     }
 
+    public function fonctionnalites()
+    {
+        return $this->belongsToMany(Fonctionnalite::class, 'plan_fonctionnalite');
+    }
+
+    public function fonctionnalitesActives()
+    {
+        return $this->belongsToMany(Fonctionnalite::class, 'plan_fonctionnalite')
+            ->where('actif', true)
+            ->orderBy('ordre');
+    }
+
     // Scopes
     public function scopeActif($query)
     {

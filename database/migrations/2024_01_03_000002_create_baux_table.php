@@ -16,6 +16,7 @@ return new class extends Migration {
             $table->date('date_fin');
             $table->decimal('loyer_mensuel', 15, 2);
             $table->decimal('caution', 15, 2);
+            $table->integer('jour_paiement')->default(5);
             $table->enum('statut', ['actif', 'expire', 'resilie', 'renouvele'])->default('actif');
             $table->timestamps();
 

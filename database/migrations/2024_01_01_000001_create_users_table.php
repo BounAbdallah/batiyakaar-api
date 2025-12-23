@@ -18,7 +18,7 @@ return new class extends Migration {
                 $table->string('email')->unique();
                 $table->string('telephone', 20)->unique();
                 $table->string('password');
-                $table->enum('user_type', ['bailleur', 'agence', 'entrepreneur', 'fournisseur', 'locataire', 'admin']);
+                $table->enum('user_type', ['bailleur', 'agence', 'entrepreneur', 'fournisseur', 'locataire', 'admin', 'technicien']);
                 $table->timestamp('email_verified_at')->nullable();
                 $table->rememberToken();
                 $table->boolean('actif')->default(true);
