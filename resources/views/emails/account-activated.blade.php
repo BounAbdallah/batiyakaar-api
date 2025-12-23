@@ -52,12 +52,7 @@
             </a>
         </p>
 
-        <div style="background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 12px; margin: 20px 0;">
-            <p style="margin: 0; color: #92400e;">
-                <strong>⚠️ Sécurité :</strong> Pour votre sécurité, nous vous recommandons fortement de changer votre
-                mot de passe lors de votre première connexion.
-            </p>
-        </div>
+
 
         <div style="background-color: #f3f4f6; padding: 15px; border-radius: 8px; margin: 20px 0;">
             <p style="margin: 0 0 10px 0; font-weight: bold;">💡 Besoin d'aide pour démarrer ?</p>
