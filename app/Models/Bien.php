@@ -24,6 +24,20 @@ class Bien extends Model
         'statut',
         'immeuble_id',
         'etage_id',
+        // Detailed specifications
+        'nombre_chambres',
+        'nombre_salons',
+        'nombre_cuisines',
+        'nombre_salles_bain',
+        'nombre_toilettes',
+        'nombre_balcons',
+        'nombre_terrasses',
+        'nombre_parkings',
+        // Equipment
+        'meuble',
+        'climatisation',
+        'jardin',
+        'piscine',
     ];
 
     protected function casts(): array
@@ -31,6 +45,10 @@ class Bien extends Model
         return [
             'surface' => 'decimal:2',
             'loyer_mensuel' => 'decimal:2',
+            'meuble' => 'boolean',
+            'climatisation' => 'boolean',
+            'jardin' => 'boolean',
+            'piscine' => 'boolean',
         ];
     }
 

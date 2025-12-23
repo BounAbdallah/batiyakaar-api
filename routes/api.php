@@ -235,6 +235,11 @@ Route::prefix('v1')->group(function () {
         Route::get('/user/fonctionnalites', [\App\Http\Controllers\Api\UserFonctionnaliteController::class, 'index']);
         Route::get('/user/fonctionnalites/{code}/check', [\App\Http\Controllers\Api\UserFonctionnaliteController::class, 'check']);
 
+        // AI Assistant
+        Route::post('/ai/chat', [\App\Http\Controllers\Api\AIController::class, 'chat']);
+        Route::get('/ai/suggestions', [\App\Http\Controllers\Api\AIController::class, 'suggestions']);
+        Route::get('/ai/health', [\App\Http\Controllers\Api\AIController::class, 'health']);
+
     });
 
     // Public Plans Route (Outside protected group if you want them visible to anyone,

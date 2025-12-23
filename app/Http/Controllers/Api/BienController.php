@@ -143,6 +143,22 @@ class BienController extends Controller
             'surface' => 'nullable|numeric|min:0',
             'loyer_mensuel' => 'required|numeric|min:0',
             'taux_commission' => 'nullable|numeric|min:0|max:100',
+
+            // Detailed specifications
+            'nombre_chambres' => 'nullable|integer|min:0',
+            'nombre_salons' => 'nullable|integer|min:0',
+            'nombre_cuisines' => 'nullable|integer|min:0',
+            'nombre_salles_bain' => 'nullable|integer|min:0',
+            'nombre_toilettes' => 'nullable|integer|min:0',
+            'nombre_balcons' => 'nullable|integer|min:0',
+            'nombre_terrasses' => 'nullable|integer|min:0',
+            'nombre_parkings' => 'nullable|integer|min:0',
+
+            // Equipment and features
+            'meuble' => 'nullable|boolean',
+            'climatisation' => 'nullable|boolean',
+            'jardin' => 'nullable|boolean',
+            'piscine' => 'nullable|boolean',
         ]);
 
         $validated['statut'] = 'disponible';
@@ -182,6 +198,18 @@ class BienController extends Controller
             $building = \App\Models\Immeuble::find($validated['immeuble_id']);
             if ($building) {
                 $validated['adresse'] = $building->adresse;
+            }
+        }
+
+        // Auto-calculate nombre_pieces if not provided but details are
+        if (empty($validated['nombre_pieces'])) {
+            $pieces = 0;
+            $pieces += $validated['nombre_chambres'] ?? 0;
+            $pieces += $validated['nombre_salons'] ?? 0;
+            $pieces += $validated['nombre_cuisines'] ?? 0;
+
+            if ($pieces > 0) {
+                $validated['nombre_pieces'] = $pieces;
             }
         }
 
@@ -237,6 +265,22 @@ class BienController extends Controller
             'statut' => 'sometimes|in:disponible,loue,en_travaux,maintenance,indisponible,vendu',
             'immeuble_id' => 'nullable|exists:immeubles,id',
             'etage_id' => 'nullable|exists:etages,id',
+
+            // Detailed specifications
+            'nombre_chambres' => 'nullable|integer|min:0',
+            'nombre_salons' => 'nullable|integer|min:0',
+            'nombre_cuisines' => 'nullable|integer|min:0',
+            'nombre_salles_bain' => 'nullable|integer|min:0',
+            'nombre_toilettes' => 'nullable|integer|min:0',
+            'nombre_balcons' => 'nullable|integer|min:0',
+            'nombre_terrasses' => 'nullable|integer|min:0',
+            'nombre_parkings' => 'nullable|integer|min:0',
+
+            // Equipment and features
+            'meuble' => 'nullable|boolean',
+            'climatisation' => 'nullable|boolean',
+            'jardin' => 'nullable|boolean',
+            'piscine' => 'nullable|boolean',
         ]);
 
         if (empty($validated['adresse']) && !empty($validated['immeuble_id'])) {
