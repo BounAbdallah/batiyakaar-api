@@ -210,8 +210,34 @@ class AdminController extends Controller
             ], 403);
         }
 
+        $wasInactive = !$user->actif;
         $user->actif = !$user->actif;
         $user->save();
+
+        // Send activation email if user was just activated and is an agency
+        if ($wasInactive && $user->actif && $user->user_type === 'agence') {
+            try {
+                $agence = $user->agence;
+                $plan = $agence->abonnement?->plan;
+
+                if ($agence && $plan) {
+                    // Generate a temporary password (you might want to store this or use a password reset link instead)
+                    $tempPassword = \Str::random(12);
+
+                    \Illuminate\Support\Facades\Mail::send('emails.account-activated', [
+                        'agence' => $agence,
+                        'user' => $user,
+                        'plan' => $plan,
+                        'password' => $tempPassword
+                    ], function ($message) use ($user, $agence) {
+                        $message->to($user->email, $agence->raison_sociale)
+                            ->subject('Votre compte Noor Immo est activé !');
+                    });
+                }
+            } catch (\Exception $e) {
+                \Log::error('Failed to send activation email: ' . $e->getMessage());
+            }
+        }
 
         return response()->json([
             'success' => true,

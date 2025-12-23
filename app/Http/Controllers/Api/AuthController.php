@@ -92,6 +92,20 @@ class AuthController extends Controller
 
                         // Notify specifically about subscription request
                         \Illuminate\Support\Facades\Notification::send($admins, new \App\Notifications\NewSubscriptionRequest($agenceData, $plan));
+
+                        // Send email to agency about subscription
+                        try {
+                            \Illuminate\Support\Facades\Mail::send('emails.subscription-created', [
+                                'agence' => $agenceData,
+                                'plan' => $plan,
+                                'user' => $user
+                            ], function ($message) use ($user, $agenceData) {
+                                $message->to($user->email, $agenceData->raison_sociale)
+                                    ->subject('Merci pour votre abonnement à Noor Immo');
+                            });
+                        } catch (\Exception $e) {
+                            \Log::error('Failed to send subscription email: ' . $e->getMessage());
+                        }
                     }
                 }
                 break;
