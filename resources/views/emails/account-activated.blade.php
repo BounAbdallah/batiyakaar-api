@@ -22,32 +22,28 @@
 
         <p>Excellente nouvelle ! Votre compte Noor Immo a été activé avec succès par notre équipe.</p>
 
-        <div style="background-color: #f3f4f6; padding: 15px; border-radius: 8px; margin: 20px 0;">
-            <p style="margin-bottom: 10px;"><strong>🔑 Vos identifiants de connexion :</strong></p>
-            <p><strong>Email :</strong> {{ $user->email }}</p>
-            <p><strong>Mot de passe :</strong> <code
-                    style="background-color: #e5e7eb; padding: 2px 6px; border-radius: 4px;">{{ $password }}</code></p>
-        </div>
-
-        <div style="background-color: #dbeafe; padding: 15px; border-radius: 8px; margin: 20px 0;">
+        <div
+            style="background-color: #dbeafe; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #2563eb;">
             <p style="margin-bottom: 10px;"><strong>📦 Votre plan :</strong></p>
-            <p><strong>{{ $plan->nom }}</strong></p>
+            <p style="font-size: 18px; font-weight: bold; color: #1e40af; margin: 10px 0;">{{ $plan->nom }}</p>
             <p style="font-size: 14px; color: #666; margin: 5px 0;">
                 ✓ {{ $plan->limite_biens === -1 ? 'Biens illimités' : $plan->limite_biens . ' biens' }}<br>
                 ✓
                 {{ $plan->limite_utilisateurs === -1 ? 'Utilisateurs illimités' : $plan->limite_utilisateurs . ' utilisateurs' }}
             </p>
-        </div>
 
-        <p><strong>Vous pouvez maintenant :</strong></p>
-        <ul>
-            <li>✅ Ajouter vos biens immobiliers</li>
-            <li>✅ Créer vos contrats de bail</li>
-            <li>✅ Enregistrer vos locataires et bailleurs</li>
-            <li>✅ Suivre les paiements de loyers</li>
-            <li>✅ Générer des quittances et documents</li>
-            <li>✅ Accéder aux rapports et statistiques</li>
-        </ul>
+            <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #93c5fd;">
+                <p style="margin-bottom: 10px; font-weight: bold; color: #1e40af;">Vous pouvez maintenant :</p>
+                <ul style="margin: 0; padding-left: 20px; color: #374151;">
+                    <li style="margin: 5px 0;">✅ Ajouter vos biens immobiliers</li>
+                    <li style="margin: 5px 0;">✅ Créer vos contrats de bail</li>
+                    <li style="margin: 5px 0;">✅ Enregistrer vos locataires et bailleurs</li>
+                    <li style="margin: 5px 0;">✅ Suivre les paiements de loyers</li>
+                    <li style="margin: 5px 0;">✅ Générer des quittances et documents</li>
+                    <li style="margin: 5px 0;">✅ Accéder aux rapports et statistiques</li>
+                </ul>
+            </div>
+        </div>
 
         <p style="text-align: center; margin: 30px 0;">
             <a href="{{ config('app.frontend_url', 'https://immo.noorwebservices.com') }}/login"
