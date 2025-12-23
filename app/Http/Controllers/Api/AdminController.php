@@ -218,9 +218,16 @@ class AdminController extends Controller
         if ($wasInactive && $user->actif && $user->user_type === 'agence') {
             try {
                 $agence = $user->agence;
-                $plan = $agence->abonnement?->plan;
+                $abonnement = $agence->abonnement;
+                $plan = $abonnement?->plan;
 
-                if ($agence && $plan) {
+                if ($agence && $plan && $abonnement) {
+                    // Activate the subscription
+                    if ($abonnement->statut === 'en_attente') {
+                        $abonnement->statut = 'actif';
+                        $abonnement->save();
+                    }
+
                     // Generate a temporary password (you might want to store this or use a password reset link instead)
                     $tempPassword = \Str::random(12);
 
