@@ -65,32 +65,40 @@ Route::prefix('v1')->group(function () {
         Route::delete('/biens/{id}', [BienController::class, 'destroy'])->middleware('permission:biens.delete');
 
         // Baux
-        Route::get('/baux/{id}/contract/download', [BailController::class, 'downloadContract'])->middleware('permission:baux.view');
+        Route::get('/baux/{id}/contract/download', [BailController::class, 'downloadContract']); // Tenants can download their own contract
         Route::get('/baux/{id}/dette/download', [BailController::class, 'downloadDebtForBail'])->middleware('permission:baux.view');
         Route::get('/baux/{id}/demande/download', [BailController::class, 'downloadDemandLetter'])->middleware('permission:baux.view');
-        Route::get('/baux', [BailController::class, 'index'])->middleware('permission:baux.view');
+        Route::get('/baux', [BailController::class, 'index']); // Tenants can view their own lease
         Route::post('/baux', [BailController::class, 'store'])->middleware('permission:baux.create');
-        Route::get('/baux/{id}', [BailController::class, 'show'])->middleware('permission:baux.view');
+        Route::get('/baux/{id}', [BailController::class, 'show']); // Tenants can view their lease details
         Route::put('/baux/{id}', [BailController::class, 'update'])->middleware('permission:baux.edit');
         Route::delete('/baux/{id}', [BailController::class, 'destroy'])->middleware('permission:baux.delete');
 
         // Paiements Loyer
         Route::get('/paiements-loyer/unpaid', [PaiementLoyerController::class, 'getUnpaidRents'])->middleware('permission:paiements.view');
-        Route::get('/paiements-loyer/{id}/quittance', [PaiementLoyerController::class, 'downloadQuittance'])->middleware('permission:paiements.view');
+        Route::get('/paiements-loyer/{id}/quittance', [PaiementLoyerController::class, 'downloadQuittance']); // Tenants can download their receipts
         Route::get('/paiements-loyer/{id}/dette/download', [PaiementLoyerController::class, 'downloadDebtAcknowledgment'])->middleware('permission:paiements.view');
         Route::get('/paiements-loyer/{id}/dette/view', [PaiementLoyerController::class, 'viewDebtAcknowledgment'])->middleware('permission:paiements.view');
-        Route::get('/paiements-loyer', [PaiementLoyerController::class, 'index'])->middleware('permission:paiements.view');
+        Route::get('/paiements-loyer', [PaiementLoyerController::class, 'index']); // Tenants can view their payments
         Route::post('/paiements-loyer', [PaiementLoyerController::class, 'store'])->middleware('permission:paiements.create');
-        Route::get('/paiements-loyer/{id}', [PaiementLoyerController::class, 'show'])->middleware('permission:paiements.view');
+        Route::get('/paiements-loyer/{id}', [PaiementLoyerController::class, 'show']); // Tenants can view payment details
         Route::put('/paiements-loyer/{id}', [PaiementLoyerController::class, 'update'])->middleware('permission:paiements.edit');
         Route::delete('/paiements-loyer/{id}', [PaiementLoyerController::class, 'destroy'])->middleware('permission:paiements.delete');
+
+        // Quittances (Receipts)
+        Route::get('/quittances', [\App\Http\Controllers\Api\QuittanceController::class, 'index']);
+        Route::post('/quittances', [\App\Http\Controllers\Api\QuittanceController::class, 'store'])->middleware('permission:paiements.create');
+        Route::get('/quittances/{id}', [\App\Http\Controllers\Api\QuittanceController::class, 'show']);
+        Route::get('/quittances/{id}/download', [\App\Http\Controllers\Api\QuittanceController::class, 'downloadReceipt']);
+        Route::get('/quittances/{id}/view', [\App\Http\Controllers\Api\QuittanceController::class, 'viewReceipt']);
+        Route::delete('/quittances/{id}', [\App\Http\Controllers\Api\QuittanceController::class, 'destroy'])->middleware('permission:paiements.delete');
 
         // Incidents
         Route::post('/incidents/{id}/assign', [IncidentController::class, 'assign'])->middleware('permission:incidents.edit');
         Route::post('/incidents/{id}/resolve', [IncidentController::class, 'resolve'])->middleware('permission:incidents.edit');
-        Route::get('/incidents', [IncidentController::class, 'index'])->middleware('permission:incidents.view');
-        Route::post('/incidents', [IncidentController::class, 'store'])->middleware('permission:incidents.create');
-        Route::get('/incidents/{id}', [IncidentController::class, 'show'])->middleware('permission:incidents.view');
+        Route::get('/incidents', [IncidentController::class, 'index']); // Tenants can view their incidents
+        Route::post('/incidents', [IncidentController::class, 'store']); // Tenants can create incidents
+        Route::get('/incidents/{id}', [IncidentController::class, 'show']); // Tenants can view incident details
         Route::put('/incidents/{id}', [IncidentController::class, 'update'])->middleware('permission:incidents.edit');
         Route::delete('/incidents/{id}', [IncidentController::class, 'destroy'])->middleware('permission:incidents.delete');
 
@@ -212,6 +220,7 @@ Route::prefix('v1')->group(function () {
 
             Route::put('/users/{id}/status', [AdminController::class, 'toggleUserStatus']);
             Route::put('/agencies/{id}/subscription', [AdminController::class, 'updateAgencySubscription']);
+            Route::put('/agencies/{id}/profile', [AdminController::class, 'updateAgencyProfile']);
 
             // Contact Messages
             Route::get('/contact-messages', [\App\Http\Controllers\Api\ContactController::class, 'index']);

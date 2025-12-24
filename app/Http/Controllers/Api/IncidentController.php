@@ -74,10 +74,22 @@ class IncidentController extends Controller
             'description' => 'required|string',
             'categorie' => 'required|in:plomberie,electricite,serrurerie,climatisation,autre',
             'priorite' => 'required|in:faible,moyenne,haute,urgente',
+            'images.*' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:5120', // Max 5MB per image
         ]);
 
         $validated['statut'] = 'ouvert';
         $validated['date_declaration'] = now();
+
+        // Handle image uploads
+        $imageUrls = [];
+        if ($request->hasFile('images')) {
+            foreach ($request->file('images') as $image) {
+                $filename = time() . '_' . uniqid() . '.' . $image->getClientOriginalExtension();
+                $path = $image->storeAs('incidents', $filename, 'public');
+                $imageUrls[] = '/storage/' . $path;
+            }
+        }
+        $validated['images'] = $imageUrls;
 
         $incident = Incident::create($validated);
 
@@ -157,7 +169,28 @@ class IncidentController extends Controller
             'priorite' => 'sometimes|in:faible,moyenne,haute,urgente',
             'statut' => 'sometimes|in:ouvert,en_cours,resolu,ferme',
             'technicien_id' => 'nullable|exists:techniciens,id',
+            'images.*' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:5120', // Max 5MB per image
+            'replace_images' => 'sometimes|boolean', // If true, replace all images; if false, append
         ]);
+
+        // Handle image uploads
+        if ($request->hasFile('images')) {
+            $imageUrls = [];
+            foreach ($request->file('images') as $image) {
+                $filename = time() . '_' . uniqid() . '.' . $image->getClientOriginalExtension();
+                $path = $image->storeAs('incidents', $filename, 'public');
+                $imageUrls[] = '/storage/' . $path;
+            }
+
+            // Replace or append images based on replace_images parameter
+            if ($request->input('replace_images', false)) {
+                $validated['images'] = $imageUrls;
+            } else {
+                // Merge with existing images
+                $existingImages = $incident->images ?? [];
+                $validated['images'] = array_merge($existingImages, $imageUrls);
+            }
+        }
 
         // If resolved, set resolution date
         if (isset($validated['statut']) && $validated['statut'] === 'resolu' && !$incident->date_resolution) {

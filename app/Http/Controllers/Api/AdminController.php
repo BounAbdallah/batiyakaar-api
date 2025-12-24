@@ -68,7 +68,24 @@ class AdminController extends Controller
 
     public function showAgency($id)
     {
-        $agence = Agence::with(['user', 'abonnement.plan'])->findOrFail($id);
+        $agence = Agence::with([
+            'user' => function ($query) {
+                $query->select(
+                    'id',
+                    'nom',
+                    'prenom',
+                    'email',
+                    'telephone',
+                    'cin',
+                    'date_naissance',
+                    'lieu_naissance',
+                    'actif',
+                    'created_at',
+                    'updated_at'
+                );
+            },
+            'abonnement.plan'
+        ])->findOrFail($id);
 
         // Calculate stats using existing relationships and queries
 
@@ -347,6 +364,59 @@ class AdminController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Fonctionnalité dissociée du plan avec succès'
+        ]);
+    }
+
+    /**
+     * Update agency profile information (Admin only)
+     */
+    public function updateAgencyProfile(Request $request, $id)
+    {
+        $agence = Agence::with('user')->findOrFail($id);
+
+        $validated = $request->validate([
+            // User fields
+            'nom' => 'nullable|string|max:255',
+            'prenom' => 'nullable|string|max:255',
+            'telephone' => 'nullable|string|max:20|unique:users,telephone,' . $agence->user_id,
+            'cin' => 'nullable|string|max:255',
+            'date_naissance' => 'nullable|date',
+            'lieu_naissance' => 'nullable|string|max:255',
+
+            // Agency fields
+            'raison_sociale' => 'nullable|string|max:255',
+            'ninea' => 'nullable|string|max:50|unique:agences,ninea,' . $id,
+            'adresse' => 'nullable|string',
+        ]);
+
+        // Update user fields if provided
+        $userFields = [];
+        foreach (['nom', 'prenom', 'telephone', 'cin', 'date_naissance', 'lieu_naissance'] as $field) {
+            if (isset($validated[$field])) {
+                $userFields[$field] = $validated[$field];
+            }
+        }
+
+        if (!empty($userFields)) {
+            $agence->user->update($userFields);
+        }
+
+        // Update agency fields if provided
+        $agencyFields = [];
+        foreach (['raison_sociale', 'ninea', 'adresse'] as $field) {
+            if (isset($validated[$field])) {
+                $agencyFields[$field] = $validated[$field];
+            }
+        }
+
+        if (!empty($agencyFields)) {
+            $agence->update($agencyFields);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Informations mises à jour avec succès',
+            'data' => $agence->fresh(['user', 'abonnement.plan'])
         ]);
     }
 }

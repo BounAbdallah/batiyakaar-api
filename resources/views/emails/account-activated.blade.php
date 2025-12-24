@@ -66,7 +66,7 @@
         <p
             style="font-size: 12px; color: #666; margin-top: 30px; border-top: 1px solid #e5e7eb; padding-top: 20px; text-align: center;">
             © {{ date('Y') }} Noor Immo - Tous droits réservés<br>
-            Gestion Immobilière Simplifiée pour l'Afrique
+            Gestion Immobilière Simplifiée pour l'Afrique | Par Noor Web Services
         </p>
     </div>
 </body>

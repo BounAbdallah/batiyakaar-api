@@ -98,6 +98,31 @@ class BailController extends Controller
         // Update bien status
         $bail->bien->update(['statut' => 'loue']);
 
+        // Load relationships for email
+        $bail->load(['bien', 'locataire.user', 'agence.user']);
+
+        // Generate contract PDF and send email to tenant
+        try {
+            // Generate PDF contract
+            $pdf = Pdf::loadView('pdfs.bail-contract', ['bail' => $bail]);
+            $pdfPath = storage_path('app/temp/bail_' . $bail->id . '_' . time() . '.pdf');
+            $pdf->save($pdfPath);
+
+            // Send email to tenant with contract PDF
+            if ($bail->locataire && $bail->locataire->user) {
+                \Illuminate\Support\Facades\Mail::to($bail->locataire->user)->send(
+                    new \App\Mail\LeaseCreated($bail, $bail->locataire->user, $pdfPath)
+                );
+            }
+
+            // Delete temporary PDF file
+            if (file_exists($pdfPath)) {
+                unlink($pdfPath);
+            }
+        } catch (\Exception $e) {
+            \Log::error('Failed to send lease creation email: ' . $e->getMessage());
+        }
+
         return response()->json([
             'success' => true,
             'message' => 'Bail créé avec succès',

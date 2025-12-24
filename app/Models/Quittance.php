@@ -11,7 +11,10 @@ class Quittance extends Model
 
     protected $fillable = [
         'paiement_loyer_id',
-        'numero',
+        'numero_quittance',
+        'montant',
+        'periode_debut',
+        'periode_fin',
         'date_emission',
         'url_pdf',
     ];
@@ -20,6 +23,9 @@ class Quittance extends Model
     {
         return [
             'date_emission' => 'datetime',
+            'periode_debut' => 'date',
+            'periode_fin' => 'date',
+            'montant' => 'decimal:2',
         ];
     }
 

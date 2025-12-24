@@ -15,6 +15,7 @@ class Incident extends Model
         'technicien_id',
         'titre',
         'description',
+        'images',
         'categorie',
         'priorite',
         'statut',
@@ -27,6 +28,7 @@ class Incident extends Model
         return [
             'date_declaration' => 'datetime',
             'date_resolution' => 'datetime',
+            'images' => 'array',
         ];
     }
 

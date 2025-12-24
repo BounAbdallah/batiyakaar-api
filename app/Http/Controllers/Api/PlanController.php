@@ -190,21 +190,7 @@ class PlanController extends Controller
                     $query->where('plan_id', $id);
                 }
             ])
-            ->get()
-            ->map(function ($agence) {
-                return [
-                    'id' => $agence->id,
-                    'raison_sociale' => $agence->raison_sociale,
-                    'email' => $agence->user->email ?? null,
-                    'telephone' => $agence->user->telephone ?? null,
-                    'adresse' => $agence->adresse,
-                    'abonnement' => $agence->abonnement ? [
-                        'statut' => $agence->abonnement->statut,
-                        'date_debut' => $agence->abonnement->date_debut,
-                        'date_fin' => $agence->abonnement->date_fin,
-                    ] : null
-                ];
-            });
+            ->get();
 
         return response()->json([
             'success' => true,

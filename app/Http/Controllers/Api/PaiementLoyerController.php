@@ -263,12 +263,42 @@ class PaiementLoyerController extends Controller
     {
         $numero = 'Q-' . date('Y') . '-' . str_pad($paiement->id, 6, '0', STR_PAD_LEFT);
 
-        Quittance::create([
+        // Create quittance record
+        $quittance = Quittance::create([
             'paiement_loyer_id' => $paiement->id,
-            'numero' => $numero,
+            'numero_quittance' => $numero,
+            'montant' => $paiement->montant,
+            'periode_debut' => $paiement->periode_debut,
+            'periode_fin' => $paiement->periode_fin,
             'date_emission' => now(),
-            'url_pdf' => null, // À générer plus tard
+            'url_pdf' => null,
         ]);
+
+        // Load relationships for email
+        $paiement->load(['bail.locataire.user', 'bail.bien']);
+        $quittance->load(['paiementLoyer.bail.bien', 'paiementLoyer.bail.locataire.user']);
+
+        // Generate PDF and send email to tenant
+        try {
+            // Generate PDF
+            $pdf = Pdf::loadView('pdfs.quittance', ['quittance' => $quittance]);
+            $pdfPath = storage_path('app/temp/quittance_' . $quittance->id . '_' . time() . '.pdf');
+            $pdf->save($pdfPath);
+
+            // Send email to tenant
+            if ($paiement->bail->locataire && $paiement->bail->locataire->user) {
+                \Illuminate\Support\Facades\Mail::to($paiement->bail->locataire->user)->send(
+                    new \App\Mail\ReceiptCreated($quittance, $paiement->bail->locataire->user, $pdfPath)
+                );
+            }
+
+            // Delete temporary PDF
+            if (file_exists($pdfPath)) {
+                unlink($pdfPath);
+            }
+        } catch (\Exception $e) {
+            \Log::error('Failed to send receipt email: ' . $e->getMessage());
+        }
     }
 
     /**

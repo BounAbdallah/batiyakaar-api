@@ -156,24 +156,19 @@ class BailleurController extends Controller
             'cni_verso' => $cniVersoPath,
         ]);
 
-        // Check if agency plan allows landlord access and send email
+        // Always send welcome email to landlord with credentials
         $authUser = $request->user();
         $agence = $authUser->agence ?? \App\Models\Agence::find($authUser->agence_id);
         $emailSent = false;
 
         if ($agence) {
-            $abonnement = $agence->abonnement()->where('statut', 'actif')->first();
-
-            if ($abonnement && $abonnement->plan) {
-                $fonctionnalites = $abonnement->plan->fonctionnalites ?? [];
-
-                // Check if plan allows landlord access
-                if (isset($fonctionnalites['accies_bailleurs']) && $fonctionnalites['accies_bailleurs']) {
-                    \Illuminate\Support\Facades\Mail::to($user)->send(
-                        new \App\Mail\LandlordAccountCreated($user, $password, $agence)
-                    );
-                    $emailSent = true;
-                }
+            try {
+                \Illuminate\Support\Facades\Mail::to($user)->send(
+                    new \App\Mail\LandlordAccountCreated($user, $password, $agence)
+                );
+                $emailSent = true;
+            } catch (\Exception $e) {
+                \Log::error('Failed to send landlord welcome email: ' . $e->getMessage());
             }
         }
 
