@@ -45,6 +45,7 @@ Route::prefix('v1')->group(function () {
         // User Profile
         Route::get('/user/profile', [UserController::class, 'profile']);
         Route::put('/user/profile', [UserController::class, 'updateProfile']);
+        Route::put('/user/password', [UserController::class, 'updatePassword']);
         Route::get('/user/portefeuille', [UserController::class, 'portefeuille']);
         Route::get('/user/notifications', [UserController::class, 'notifications']);
         Route::put('/user/notifications/{id}/read', [UserController::class, 'markNotificationRead']);

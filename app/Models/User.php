@@ -137,12 +137,13 @@ class User extends Authenticatable
             return true;
         }
 
-        // Check via agency (for agency owners and team members)
-        if ($this->user_type === 'agence') {
-            // Owner
-            return $this->agence?->hasFonctionnalite($code) ?? false;
-        } elseif ($this->agence_id) {
-            // Team member
+        // 1. Check if user OWNS an agency (and thus is the primary account for it)
+        if ($this->agence) {
+            return $this->agence->hasFonctionnalite($code);
+        }
+
+        // 2. Check if user is a MEMBER of an agency (via agence_id)
+        if ($this->agence_id) {
             return $this->employeurAgence?->hasFonctionnalite($code) ?? false;
         }
 
@@ -156,12 +157,12 @@ class User extends Authenticatable
             return \App\Models\Fonctionnalite::actif()->parOrdre()->get();
         }
 
-        // Agency owner
-        if ($this->user_type === 'agence') {
-            return $this->agence?->getFonctionnalitesDisponibles() ?? collect();
+        // 1. Check if user OWNS an agency
+        if ($this->agence) {
+            return $this->agence->getFonctionnalitesDisponibles();
         }
 
-        // Team member
+        // 2. Check if user is a MEMBER of an agency
         if ($this->agence_id) {
             return $this->employeurAgence?->getFonctionnalitesDisponibles() ?? collect();
         }

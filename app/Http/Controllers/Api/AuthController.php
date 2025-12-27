@@ -211,6 +211,17 @@ class AuthController extends Controller
             // Fail silently
         }
 
+        // Load relationships for frontend
+        $user->load([
+            'bailleur',
+            'agence',
+            'entrepreneur',
+            'fournisseur',
+            'locataire',
+            'portefeuilleVirtuel',
+            'employeurAgence.user',
+        ]);
+
         return response()->json([
             'success' => true,
             'message' => 'Connexion réussie',
@@ -235,6 +246,7 @@ class AuthController extends Controller
                 'fournisseur',
                 'locataire',
                 'portefeuilleVirtuel',
+                'employeurAgence.user',
             ]),
         ]);
     }

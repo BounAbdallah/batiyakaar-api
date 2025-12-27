@@ -18,6 +18,7 @@ class UserController extends Controller
             'fournisseur.catalogue',
             'locataire',
             'portefeuilleVirtuel',
+            'employeurAgence.user',
             'notifications' => function ($query) {
                 $query->where('lue', false)->latest()->limit(10);
             }
@@ -49,6 +50,34 @@ class UserController extends Controller
             'success' => true,
             'message' => 'Profil mis à jour avec succès',
             'data' => $user
+        ]);
+    }
+
+    /**
+     * Update user password
+     */
+    public function updatePassword(Request $request)
+    {
+        $request->validate([
+            'current_password' => 'required',
+            'new_password' => 'required|min:8|confirmed',
+        ]);
+
+        $user = $request->user();
+
+        if (!\Illuminate\Support\Facades\Hash::check($request->current_password, $user->password)) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'current_password' => ['Le mot de passe actuel est incorrect.'],
+            ]);
+        }
+
+        $user->update([
+            'password' => \Illuminate\Support\Facades\Hash::make($request->new_password)
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Mot de passe modifié avec succès',
         ]);
     }
 
