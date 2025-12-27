@@ -16,6 +16,14 @@ return Application::configure(basePath: dirname(__DIR__))
             'permission' => \App\Http\Middleware\CheckPermission::class,
             'feature' => \App\Http\Middleware\CheckFonctionnalite::class,
         ]);
+
+        $middleware->web(append: [
+            \App\Http\Middleware\TrackLastSeen::class,
+        ]);
+
+        $middleware->api(append: [
+            \App\Http\Middleware\TrackLastSeen::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

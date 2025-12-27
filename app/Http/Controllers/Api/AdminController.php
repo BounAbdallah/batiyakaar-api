@@ -18,12 +18,39 @@ class AdminController extends Controller
 {
     public function stats()
     {
+        // Online users in the last 5 minutes
+        $onlineUsersQuery = User::where('last_seen_at', '>=', now()->subMinutes(5));
+        $onlineUsersCount = $onlineUsersQuery->count();
+        $onlineUsersList = $onlineUsersQuery->select('id', 'nom', 'prenom', 'email', 'user_type', 'last_seen_at')
+            ->orderBy('last_seen_at', 'desc')
+            ->get();
+
+        // Visits counts
+        $visits = \App\Models\Visit::select('page', DB::raw('count(*) as total'))
+            ->groupBy('page')
+            ->pluck('total', 'page')
+            ->toArray();
+
+        // Ensure defaults
+        $landingVisits = $visits['landing'] ?? 0;
+        $platformVisits = $visits['platform'] ?? 0;
+        $otherVisits = \App\Models\Visit::whereNotIn('page', ['landing', 'platform'])->count();
+
+
         $stats = [
             'users' => [
                 'total' => User::count(),
+                'online' => $onlineUsersCount,
+                'online_list' => $onlineUsersList, // Added list of online users
                 'agences' => User::where('user_type', 'agence')->count(),
                 'bailleurs' => User::where('user_type', 'bailleur')->count(),
                 'locataires' => User::where('user_type', 'locataire')->count(),
+            ],
+            'visits' => [
+                'landing' => $landingVisits,
+                'platform' => $platformVisits,
+                'other' => $otherVisits,
+                'total' => $landingVisits + $platformVisits + $otherVisits
             ],
             'agencies' => [
                 'total' => Agence::count(),
@@ -42,6 +69,22 @@ class AdminController extends Controller
             'success' => true,
             'data' => $stats
         ]);
+    }
+
+    public function storeVisit(Request $request)
+    {
+        $validated = $request->validate([
+            'page' => 'required|string',
+        ]);
+
+        \App\Models\Visit::create([
+            'page' => $validated['page'],
+            'ip_address' => $request->ip(),
+            'user_agent' => $request->userAgent(),
+            'user_id' => auth('sanctum')->id(), // Optional, if user is logged in
+        ]);
+
+        return response()->json(['success' => true]);
     }
 
     public function agencies(Request $request)

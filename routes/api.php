@@ -264,4 +264,7 @@ Route::prefix('v1')->group(function () {
 
     // Contact (Public)
     Route::post('/contact', [\App\Http\Controllers\Api\ContactController::class, 'store']);
+
+    // Analytics (Public/Semi-public)
+    Route::post('/analytics/visit', [\App\Http\Controllers\Api\AdminController::class, 'storeVisit']);
 });

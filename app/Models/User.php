@@ -49,6 +49,7 @@ class User extends Authenticatable
             'actif' => 'boolean',
             'date_naissance' => 'date',
             'permissions' => 'array',
+            'last_seen_at' => 'datetime',
         ];
     }
 
