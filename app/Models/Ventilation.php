@@ -12,6 +12,7 @@ class Ventilation extends Model
     protected $fillable = [
         'paiement_loyer_id',
         'montant_agence',
+        'montant_plateforme',
         'montant_bailleur',
         'date_ventilation',
     ];

@@ -247,6 +247,7 @@ class PaiementLoyerController extends Controller
         Ventilation::create([
             'paiement_loyer_id' => $paiement->id,
             'montant_agence' => $montant_agence,
+            'montant_plateforme' => 0,
             'montant_bailleur' => $montant_bailleur,
             'date_ventilation' => now(),
         ]);
