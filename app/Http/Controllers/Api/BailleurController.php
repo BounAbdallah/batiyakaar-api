@@ -104,99 +104,118 @@ class BailleurController extends Controller
      */
     public function store(Request $request)
     {
-        $validator = \Illuminate\Support\Facades\Validator::make($request->all(), [
-            'prenom' => 'required|string|max:255',
-            'nom' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users',
-            'telephone' => 'nullable|string|max:20',
-            'pays' => 'required|string|max:100',
-            'adresse_diaspora' => 'nullable|string',
-            'numero_cni' => 'nullable|string|max:50',
-            'date_naissance' => 'nullable|date|before:today',
-            'lieu_naissance' => 'nullable|string|max:255',
-            'cni_recto' => 'nullable|file|mimes:jpeg,png,jpg|max:2048',
-            'cni_verso' => 'nullable|file|mimes:jpeg,png,jpg|max:2048',
-        ]);
+        try {
+            \Log::info('Starting Bailleur creation process', ['email' => $request->email]);
+            $validator = \Illuminate\Support\Facades\Validator::make($request->all(), [
+                'prenom' => 'required|string|max:255',
+                'nom' => 'required|string|max:255',
+                'email' => 'required|string|email|max:255|unique:users',
+                'telephone' => 'nullable|string|max:20',
+                'pays' => 'required|string|max:100',
+                'adresse_diaspora' => 'nullable|string',
+                'numero_cni' => 'nullable|string|max:50',
+                'date_naissance' => 'nullable|date|before:today',
+                'lieu_naissance' => 'nullable|string|max:255',
+                'cni_recto' => 'nullable|file|mimes:jpeg,png,jpg|max:2048',
+                'cni_verso' => 'nullable|file|mimes:jpeg,png,jpg|max:2048',
+            ]);
 
-        if ($validator->fails()) {
-            \Log::error('Validation failed for Bailleur creation:', [
-                'errors' => $validator->errors()->toArray(),
-                'request_data' => $request->except(['cni_recto', 'cni_verso'])
+            if ($validator->fails()) {
+                \Log::error('Validation failed for Bailleur creation:', [
+                    'errors' => $validator->errors()->toArray(),
+                    'request_data' => $request->except(['cni_recto', 'cni_verso'])
+                ]);
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Erreur de validation',
+                    'errors' => $validator->errors()
+                ], 422);
+            }
+
+            $validated = $validator->validated();
+
+            // Auto-generate secure password
+            $password = \Illuminate\Support\Str::random(10);
+
+            // Create Bailleur Profile
+            // Handle file uploads
+            $cniRectoPath = null;
+            $cniVersoPath = null;
+
+            if ($request->hasFile('cni_recto')) {
+                $cniRectoPath = $request->file('cni_recto')->store('cni/bailleurs', 'public');
+            }
+
+            if ($request->hasFile('cni_verso')) {
+                $cniVersoPath = $request->file('cni_verso')->store('cni/bailleurs', 'public');
+            }
+
+            \Log::info('Files stored', ['recto' => $cniRectoPath, 'verso' => $cniVersoPath]);
+
+            $bailleur = \Illuminate\Support\Facades\DB::transaction(function () use ($validated, $password, $request, $cniRectoPath, $cniVersoPath) {
+                \Log::info('Creating user for bailleur');
+                // Create User
+                $user = User::create([
+                    'prenom' => $validated['prenom'],
+                    'nom' => $validated['nom'],
+                    'email' => $validated['email'],
+                    'telephone' => $validated['telephone'] ?? null,
+                    'password' => Hash::make($password),
+                    'user_type' => 'bailleur',
+                    'agence_id' => $request->user()->agence_id ?? ($request->user()->agence ? $request->user()->agence->id : null),
+                ]);
+
+                \Log::info('User created', ['user_id' => $user->id]);
+
+                return Bailleur::create([
+                    'user_id' => $user->id,
+                    'pays' => $validated['pays'],
+                    'adresse_diaspora' => $validated['adresse_diaspora'] ?? null,
+                    'numero_cni' => $validated['numero_cni'] ?? null,
+                    'date_naissance' => $validated['date_naissance'] ?? null,
+                    'lieu_naissance' => $validated['lieu_naissance'] ?? null,
+                    'cni_recto' => $cniRectoPath,
+                    'cni_verso' => $cniVersoPath,
+                ]);
+            });
+
+            \Log::info('Bailleur profile created', ['bailleur_id' => $bailleur->id]);
+
+            $user = $bailleur->user;
+
+            // Always send welcome email to landlord with credentials
+            $authUser = $request->user();
+            $agence = $authUser->agence ?? \App\Models\Agence::find($authUser->agence_id);
+            $emailSent = false;
+
+            if ($agence) {
+                try {
+                    \Illuminate\Support\Facades\Mail::to($user)->send(
+                        new \App\Mail\LandlordAccountCreated($user, $password, $agence)
+                    );
+                    $emailSent = true;
+                } catch (\Exception $e) {
+                    \Log::error('Failed to send landlord welcome email: ' . $e->getMessage());
+                }
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Bailleur créé avec succès',
+                'data' => $bailleur->load('user'),
+                'email_sent' => $emailSent,
+                'password_temp' => $password // For dev/demo only
+            ], 201);
+
+        } catch (\Exception $mainError) {
+            \Log::error('CRITICAL ERROR in Bailleur creation: ' . $mainError->getMessage(), [
+                'exception' => $mainError
             ]);
             return response()->json([
                 'success' => false,
-                'message' => 'Erreur de validation',
-                'errors' => $validator->errors()
-            ], 422);
+                'message' => 'Une erreur interne est survenue: ' . $mainError->getMessage()
+            ], 500);
         }
-
-        $validated = $validator->validated();
-
-        // Auto-generate secure password
-        $password = \Illuminate\Support\Str::random(10);
-
-        // Create Bailleur Profile
-        // Handle file uploads
-        $cniRectoPath = null;
-        $cniVersoPath = null;
-
-        if ($request->hasFile('cni_recto')) {
-            $cniRectoPath = $request->file('cni_recto')->store('cni/bailleurs', 'public');
-        }
-
-        if ($request->hasFile('cni_verso')) {
-            $cniVersoPath = $request->file('cni_verso')->store('cni/bailleurs', 'public');
-        }
-
-        $bailleur = \Illuminate\Support\Facades\DB::transaction(function () use ($validated, $password, $request, $cniRectoPath, $cniVersoPath) {
-            // Create User
-            $user = User::create([
-                'prenom' => $validated['prenom'],
-                'nom' => $validated['nom'],
-                'email' => $validated['email'],
-                'telephone' => $validated['telephone'] ?? null,
-                'password' => Hash::make($password),
-                'user_type' => 'bailleur',
-                'agence_id' => $request->user()->agence_id ?? ($request->user()->agence ? $request->user()->agence->id : null),
-            ]);
-
-            return Bailleur::create([
-                'user_id' => $user->id,
-                'pays' => $validated['pays'],
-                'adresse_diaspora' => $validated['adresse_diaspora'] ?? null,
-                'numero_cni' => $validated['numero_cni'] ?? null,
-                'date_naissance' => $validated['date_naissance'] ?? null,
-                'lieu_naissance' => $validated['lieu_naissance'] ?? null,
-                'cni_recto' => $cniRectoPath,
-                'cni_verso' => $cniVersoPath,
-            ]);
-        });
-
-        $user = $bailleur->user;
-
-        // Always send welcome email to landlord with credentials
-        $authUser = $request->user();
-        $agence = $authUser->agence ?? \App\Models\Agence::find($authUser->agence_id);
-        $emailSent = false;
-
-        if ($agence) {
-            try {
-                \Illuminate\Support\Facades\Mail::to($user)->send(
-                    new \App\Mail\LandlordAccountCreated($user, $password, $agence)
-                );
-                $emailSent = true;
-            } catch (\Exception $e) {
-                \Log::error('Failed to send landlord welcome email: ' . $e->getMessage());
-            }
-        }
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Bailleur créé avec succès',
-            'data' => $bailleur->load('user'),
-            'email_sent' => $emailSent,
-            'password_temp' => $password // For dev/demo only
-        ], 201);
     }
 
     /**
