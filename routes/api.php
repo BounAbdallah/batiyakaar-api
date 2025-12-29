@@ -103,6 +103,19 @@ Route::prefix('v1')->group(function () {
         Route::put('/incidents/{id}', [IncidentController::class, 'update'])->middleware('permission:incidents.edit');
         Route::delete('/incidents/{id}', [IncidentController::class, 'destroy'])->middleware('permission:incidents.delete');
 
+        // Note de Dépenses (Grouped Expenses)
+        Route::get('/note-depenses', [\App\Http\Controllers\Api\NoteDepenseController::class, 'index']);
+        Route::post('/note-depenses', [\App\Http\Controllers\Api\NoteDepenseController::class, 'store']);
+        Route::get('/note-depenses/{id}', [\App\Http\Controllers\Api\NoteDepenseController::class, 'show']);
+        Route::put('/note-depenses/{id}', [\App\Http\Controllers\Api\NoteDepenseController::class, 'update']);
+        Route::delete('/note-depenses/{id}', [\App\Http\Controllers\Api\NoteDepenseController::class, 'destroy']);
+        Route::get('/note-depenses/{id}/pdf', [\App\Http\Controllers\Api\NoteDepenseController::class, 'generatePDF']);
+        Route::get('/reports/periodic-expenses', [\App\Http\Controllers\Api\NoteDepenseController::class, 'generatePeriodicReport']);
+
+        // Keeping simple depenses for individual item updates if needed, but primary is Note
+        Route::apiResource('depenses', \App\Http\Controllers\Api\DepenseController::class);
+
+
         // Dashboard Stats
         Route::get('/dashboard/stats', [\App\Http\Controllers\Api\DashboardController::class, 'stats']);
         Route::get('/dashboard/sidebar-counts', [\App\Http\Controllers\Api\DashboardController::class, 'sidebarCounts']);

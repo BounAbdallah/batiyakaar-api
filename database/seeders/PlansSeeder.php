@@ -90,6 +90,7 @@ class PlansSeeder extends Seeder
                 'gestion_baux',
                 'paiements_loyers',
                 'gestion_locataires',
+                'gestion_depenses',
             ],
             'Pro' => [
                 'gestion_biens',
@@ -98,6 +99,7 @@ class PlansSeeder extends Seeder
                 'gestion_locataires',
                 'gestion_bailleurs',
                 'gestion_immeubles',
+                'gestion_depenses',
                 'multi_utilisateurs',
                 'notifications_whatsapp',
                 'acces_bailleurs',
@@ -111,6 +113,7 @@ class PlansSeeder extends Seeder
                 'gestion_immeubles',
                 'etats_lieux',
                 'gestion_incidents',
+                'gestion_depenses',
                 'multi_utilisateurs',
                 'notifications_whatsapp',
                 'acces_locataires',

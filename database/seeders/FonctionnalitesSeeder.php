@@ -141,6 +141,16 @@ class FonctionnalitesSeeder extends Seeder
                 'ordre' => 130,
             ],
             [
+                'code' => 'gestion_depenses',
+                'nom' => 'Gestion des Dépenses',
+                'description' => 'Permet de gérer et suivre les dépenses par bien et bailleur',
+                'module' => 'depenses',
+                'icone' => 'DollarSign',
+                'route' => '/expenses',
+                'actif' => true,
+                'ordre' => 85,
+            ],
+            [
                 'code' => 'multi_utilisateurs',
                 'nom' => 'Multi-utilisateurs',
                 'description' => 'Permet d\'avoir plusieurs utilisateurs dans l\'agence',

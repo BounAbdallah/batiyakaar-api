@@ -27,13 +27,11 @@ class BailleurController extends Controller
             });
         }
 
-        // Global Stats for the Dashboard
-        $stats = [];
-        if ($user->user_type === 'agence') {
-            $agenceId = $user->agence ? $user->agence->id : $user->agence_id;
-            $stats['total_bailleurs'] = Bailleur::whereHas('biens', function ($q) use ($agenceId) {
-                $q->where('agence_id', $agenceId);
-            })->count();
+        // Support filtering by agence_id from request params (for dropdowns)
+        if ($request->has('agence_id')) {
+            $query->whereHas('biens', function ($q) use ($request) {
+                $q->where('agence_id', $request->agence_id);
+            });
         }
 
         if ($request->has('search')) {
