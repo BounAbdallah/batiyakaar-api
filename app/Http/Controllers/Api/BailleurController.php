@@ -114,8 +114,8 @@ class BailleurController extends Controller
             'numero_cni' => 'nullable|string|max:50',
             'date_naissance' => 'nullable|date|before:today',
             'lieu_naissance' => 'nullable|string|max:255',
-            'cni_recto' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
-            'cni_verso' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+            'cni_recto' => 'nullable|file|mimes:jpeg,png,jpg|max:2048',
+            'cni_verso' => 'nullable|file|mimes:jpeg,png,jpg|max:2048',
         ]);
 
         // Auto-generate secure password
