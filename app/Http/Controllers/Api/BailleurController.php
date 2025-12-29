@@ -121,16 +121,6 @@ class BailleurController extends Controller
         // Auto-generate secure password
         $password = \Illuminate\Support\Str::random(10);
 
-        // Create User
-        $user = User::create([
-            'prenom' => $validated['prenom'],
-            'nom' => $validated['nom'],
-            'email' => $validated['email'],
-            'telephone' => $validated['telephone'] ?? null,
-            'password' => Hash::make($password),
-            'user_type' => 'bailleur',
-        ]);
-
         // Create Bailleur Profile
         // Handle file uploads
         $cniRectoPath = null;
@@ -144,16 +134,31 @@ class BailleurController extends Controller
             $cniVersoPath = $request->file('cni_verso')->store('cni/bailleurs', 'public');
         }
 
-        $bailleur = Bailleur::create([
-            'user_id' => $user->id,
-            'pays' => $validated['pays'],
-            'adresse_diaspora' => $validated['adresse_diaspora'] ?? null,
-            'numero_cni' => $validated['numero_cni'] ?? null,
-            'date_naissance' => $validated['date_naissance'] ?? null,
-            'lieu_naissance' => $validated['lieu_naissance'] ?? null,
-            'cni_recto' => $cniRectoPath,
-            'cni_verso' => $cniVersoPath,
-        ]);
+        $bailleur = \Illuminate\Support\Facades\DB::transaction(function () use ($validated, $password, $request, $cniRectoPath, $cniVersoPath) {
+            // Create User
+            $user = User::create([
+                'prenom' => $validated['prenom'],
+                'nom' => $validated['nom'],
+                'email' => $validated['email'],
+                'telephone' => $validated['telephone'] ?? null,
+                'password' => Hash::make($password),
+                'user_type' => 'bailleur',
+                'agence_id' => $request->user()->agence_id ?? ($request->user()->agence ? $request->user()->agence->id : null),
+            ]);
+
+            return Bailleur::create([
+                'user_id' => $user->id,
+                'pays' => $validated['pays'],
+                'adresse_diaspora' => $validated['adresse_diaspora'] ?? null,
+                'numero_cni' => $validated['numero_cni'] ?? null,
+                'date_naissance' => $validated['date_naissance'] ?? null,
+                'lieu_naissance' => $validated['lieu_naissance'] ?? null,
+                'cni_recto' => $cniRectoPath,
+                'cni_verso' => $cniVersoPath,
+            ]);
+        });
+
+        $user = $bailleur->user;
 
         // Always send welcome email to landlord with credentials
         $authUser = $request->user();
