@@ -35,8 +35,13 @@ class BailleurController extends Controller
 
         // Support filtering by agence_id from request params (for dropdowns)
         if ($request->has('agence_id')) {
-            $query->whereHas('biens', function ($q) use ($request) {
-                $q->where('agence_id', $request->agence_id);
+            $reqAgenceId = $request->agence_id;
+            $query->where(function ($q) use ($reqAgenceId) {
+                $q->whereHas('biens', function ($sub) use ($reqAgenceId) {
+                    $sub->where('agence_id', $reqAgenceId);
+                })->orWhereHas('user', function ($sub) use ($reqAgenceId) {
+                    $sub->where('agence_id', $reqAgenceId);
+                });
             });
         }
 
@@ -118,8 +123,8 @@ class BailleurController extends Controller
             $validator = \Illuminate\Support\Facades\Validator::make($request->all(), [
                 'prenom' => 'required|string|max:255',
                 'nom' => 'required|string|max:255',
-                'email' => 'required|string|email|max:255|unique:users',
-                'telephone' => 'nullable|string|max:20',
+                'email' => 'nullable|string|email|max:255|unique:users',
+                'telephone' => 'required_without:email|nullable|string|max:20',
                 'pays' => 'required|string|max:100',
                 'adresse_diaspora' => 'nullable|string',
                 'numero_cni' => 'nullable|string|max:50',
@@ -197,7 +202,7 @@ class BailleurController extends Controller
             $agence = $authUser->agence ?? \App\Models\Agence::find($authUser->agence_id);
             $emailSent = false;
 
-            if ($agence) {
+            if ($agence && $user->email) {
                 try {
                     \Illuminate\Support\Facades\Mail::to($user)->send(
                         new \App\Mail\LandlordAccountCreated($user, $password, $agence)
@@ -249,7 +254,10 @@ class BailleurController extends Controller
             ]);
 
             // Verify this agency actually manages properties for this landlord
-            if ($bailleur->biens->isEmpty()) {
+            // OR created this landlord
+            $isCreator = $bailleur->user && $bailleur->user->agence_id == $agenceId;
+
+            if ($bailleur->biens->isEmpty() && !$isCreator) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Vous n\'avez pas accès aux informations de ce bailleur'

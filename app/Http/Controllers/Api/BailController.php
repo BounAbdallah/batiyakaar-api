@@ -109,7 +109,7 @@ class BailController extends Controller
             $pdf->save($pdfPath);
 
             // Send email to tenant with contract PDF
-            if ($bail->locataire && $bail->locataire->user) {
+            if ($bail->locataire && $bail->locataire->user && $bail->locataire->user->email) {
                 \Illuminate\Support\Facades\Mail::to($bail->locataire->user)->send(
                     new \App\Mail\LeaseCreated($bail, $bail->locataire->user, $pdfPath)
                 );

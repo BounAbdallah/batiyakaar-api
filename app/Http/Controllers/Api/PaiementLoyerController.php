@@ -284,7 +284,7 @@ class PaiementLoyerController extends Controller
             $pdf->save($pdfPath);
 
             // Send email to tenant
-            if ($paiement->bail->locataire && $paiement->bail->locataire->user) {
+            if ($paiement->bail->locataire && $paiement->bail->locataire->user && $paiement->bail->locataire->user->email) {
                 \Illuminate\Support\Facades\Mail::to($paiement->bail->locataire->user)->send(
                     new \App\Mail\ReceiptCreated($quittance, $paiement->bail->locataire->user, $pdfPath)
                 );

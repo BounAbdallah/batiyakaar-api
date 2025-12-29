@@ -30,7 +30,7 @@
         </ul>
 
         <p style="text-align: center; margin: 30px 0;">
-            <a href="{{ config('app.frontend_url', 'http://localhost:5173') }}/login"
+            <a href="{{ config('app.frontend_url', 'http://localhost:5173') }}login"
                 style="display: inline-block; background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold;">
                 Se connecter
             </a>

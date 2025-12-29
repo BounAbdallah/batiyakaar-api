@@ -64,8 +64,8 @@ class LocataireController extends Controller
         $validated = $request->validate([
             'prenom' => 'required|string',
             'nom' => 'required|string',
-            'email' => 'required|email|unique:users,email',
-            'telephone' => 'nullable|string',
+            'email' => 'nullable|email|unique:users,email',
+            'telephone' => 'required_without:email|nullable|string',
             'numero_cni' => 'nullable|string|max:50',
             'date_naissance' => 'nullable|date|before:today',
             'lieu_naissance' => 'nullable|string|max:255',
@@ -115,7 +115,7 @@ class LocataireController extends Controller
         $agence = $authUser->agence ?? \App\Models\Agence::find($authUser->agence_id);
         $emailSent = false;
 
-        if ($agence) {
+        if ($agence && $user->email) {
             try {
                 \Illuminate\Support\Facades\Mail::to($user)->send(
                     new \App\Mail\TenantAccountCreated($user, $password, $agence)
