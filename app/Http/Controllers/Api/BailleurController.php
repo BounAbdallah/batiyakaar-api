@@ -104,7 +104,7 @@ class BailleurController extends Controller
      */
     public function store(Request $request)
     {
-        $validated = $request->validate([
+        $validator = \Illuminate\Support\Facades\Validator::make($request->all(), [
             'prenom' => 'required|string|max:255',
             'nom' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
@@ -117,6 +117,20 @@ class BailleurController extends Controller
             'cni_recto' => 'nullable|file|mimes:jpeg,png,jpg|max:2048',
             'cni_verso' => 'nullable|file|mimes:jpeg,png,jpg|max:2048',
         ]);
+
+        if ($validator->fails()) {
+            \Log::error('Validation failed for Bailleur creation:', [
+                'errors' => $validator->errors()->toArray(),
+                'request_data' => $request->except(['cni_recto', 'cni_verso'])
+            ]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur de validation',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        $validated = $validator->validated();
 
         // Auto-generate secure password
         $password = \Illuminate\Support\Str::random(10);
