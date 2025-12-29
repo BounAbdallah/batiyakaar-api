@@ -230,27 +230,23 @@ class PaiementLoyerController extends Controller
         $montant = $paiement->montant;
 
         // Get commission rates from agence settings (or use defaults if no agence)
-        $taux_plateforme = 5.00; // Default
         $taux_agence = 0.00;
 
         if ($bail->agence_id) {
             $agence = $bail->agence;
-            $taux_plateforme = $agence->taux_commission_plateforme ?? 5.00;
             // Check if property has a specific commission, fallback to agence default
             $taux_agence = $bail->bien->taux_commission ?? ($agence->taux_commission_agence ?? 10.00);
         }
 
         // Calculate amounts based on percentages
-        $montant_plateforme = $montant * ($taux_plateforme / 100);
         $montant_agence = $montant * ($taux_agence / 100);
 
         // Reste pour le bailleur
-        $montant_bailleur = $montant - $montant_plateforme - $montant_agence;
+        $montant_bailleur = $montant - $montant_agence;
 
         Ventilation::create([
             'paiement_loyer_id' => $paiement->id,
             'montant_agence' => $montant_agence,
-            'montant_plateforme' => $montant_plateforme,
             'montant_bailleur' => $montant_bailleur,
             'date_ventilation' => now(),
         ]);

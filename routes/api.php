@@ -112,6 +112,7 @@ Route::prefix('v1')->group(function () {
         Route::delete('/note-depenses/{id}', [\App\Http\Controllers\Api\NoteDepenseController::class, 'destroy']);
         Route::get('/note-depenses/{id}/pdf', [\App\Http\Controllers\Api\NoteDepenseController::class, 'generatePDF']);
         Route::get('/reports/periodic-expenses', [\App\Http\Controllers\Api\NoteDepenseController::class, 'generatePeriodicReport']);
+        Route::get('/reports/landlord-monthly', [\App\Http\Controllers\Api\BailleurController::class, 'generateMonthlyReport']);
 
         // Keeping simple depenses for individual item updates if needed, but primary is Note
         Route::apiResource('depenses', \App\Http\Controllers\Api\DepenseController::class);

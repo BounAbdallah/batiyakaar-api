@@ -17,7 +17,6 @@ class Agence extends Model
         'adresse',
         'logo',
         'taux_commission_agence',
-        'taux_commission_plateforme',
     ];
 
     // Accessors

@@ -8,6 +8,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class BailleurController extends Controller
 {
@@ -316,5 +317,120 @@ class BailleurController extends Controller
             'success' => true,
             'message' => 'Bailleur supprimé avec succès'
         ]);
+    }
+    /**
+     * Generate General Monthly Report for Landlord
+     */
+    public function generateMonthlyReport(Request $request)
+    {
+        $validated = $request->validate([
+            'bailleur_id' => 'required|exists:bailleurs,id',
+            'month' => 'required|integer|min:1|max:12',
+            'year' => 'required|integer|min:2020',
+        ]);
+
+        $bailleur = Bailleur::with('user')->findOrFail($validated['bailleur_id']);
+        $agence = auth()->user()->agence ?? \App\Models\Agence::where('user_id', auth()->id())->first();
+
+        $month = $validated['month'];
+        $year = $validated['year'];
+        $startDate = \Carbon\Carbon::createFromDate($year, $month, 1)->startOfMonth();
+        $endDate = $startDate->copy()->endOfMonth();
+
+        // 1. Get all properties for this landlord managed by this agency
+        $biens = \App\Models\Bien::where('bailleur_id', $bailleur->id)
+            ->where('agence_id', $agence->id)
+            ->get();
+        $bienIds = $biens->pluck('id');
+
+        // 2. Get all payments received this month for these properties
+        $payments = \App\Models\PaiementLoyer::with(['bail.locataire.user', 'bail.bien', 'ventilation'])
+            ->whereHas('bail', function ($q) use ($bienIds) {
+                $q->whereIn('bien_id', $bienIds);
+            })
+            ->where(function ($q) use ($month, $year) {
+                $q->whereMonth('periode_debut', $month)->whereYear('periode_debut', $year)
+                    ->orWhere(function ($sub) use ($month, $year) {
+                        $sub->whereMonth('date_paiement', $month)->whereYear('date_paiement', $year);
+                    });
+            })
+            ->get();
+
+        // 3. Get active leases to identify missing payments
+        $activeLeases = \App\Models\Bail::with(['locataire.user', 'bien'])
+            ->whereIn('bien_id', $bienIds)
+            ->where('statut', 'actif')
+            ->where('date_debut', '<=', $endDate)
+            ->where(function ($q) use ($startDate) {
+                $q->whereNull('date_fin')->orWhere('date_fin', '>=', $startDate);
+            })
+            ->get();
+
+        // 4. Calculate stats
+        $totalCollected = $payments->where('statut', 'paye')->sum('montant');
+        $totalPartial = $payments->where('statut', 'partiel')->sum('montant');
+        $totalReceived = $totalCollected + $totalPartial;
+
+        $totalCommission = 0;
+        foreach ($payments as $p) {
+            $taux_agence = $p->bail->bien->taux_commission ?? ($agence->taux_commission_agence ?? 10.00);
+            $p->commission_percentage = $taux_agence;
+
+            if ($p->ventilation) {
+                $totalCommission += $p->ventilation->montant_agence;
+            } else {
+                // Fallback: calculate on-the-fly if ventilation record is missing (e.g. seeded data)
+                $p->calculated_commission = $p->montant * ($taux_agence / 100);
+                $totalCommission += $p->calculated_commission;
+            }
+        }
+
+        // 5. Get expenses
+        $expenses = \App\Models\NoteDepense::with('depenses')
+            ->where('bailleur_id', $bailleur->id)
+            ->where('agence_id', $agence->id)
+            ->where('mois', $month)
+            ->where('annee', $year)
+            ->get();
+        $totalExpenses = $expenses->sum('total_montant');
+
+        // 6. Identify missing payments
+        $missingPayments = [];
+        $totalDue = $activeLeases->sum('loyer_mensuel');
+
+        foreach ($activeLeases as $lease) {
+            $hasPayment = $payments->contains(function ($p) use ($lease) {
+                return $p->bail_id === $lease->id;
+            });
+
+            if (!$hasPayment) {
+                $missingPayments[] = [
+                    'locataire' => $lease->locataire->user->prenom . ' ' . $lease->locataire->user->nom,
+                    'bien' => $lease->bien->reference,
+                    'montant' => $lease->loyer_mensuel
+                ];
+            }
+        }
+
+        $data = [
+            'bailleur' => $bailleur,
+            'agence' => $agence,
+            'month' => $startDate->translatedFormat('F'),
+            'year' => $year,
+            'payments' => $payments,
+            'missing_payments' => $missingPayments,
+            'expenses' => $expenses,
+            'stats' => [
+                'total_received' => $totalReceived,
+                'total_due' => $totalDue,
+                'total_commission' => $totalCommission,
+                'total_expenses' => $totalExpenses,
+                'balance' => $totalReceived - $totalCommission - $totalExpenses,
+                'commission_rate' => $payments->count() > 0 ? ($payments->first()->commission_percentage ?? ($agence->taux_commission_agence ?? 10.00)) : ($agence->taux_commission_agence ?? 10.00)
+            ]
+        ];
+
+        $pdf = Pdf::loadView('pdfs.landlord_monthly_report', $data);
+        return $pdf->download('rapport_mensuel_' . $bailleur->id . '_' . $month . '_' . $year . '.pdf');
     }
 }
