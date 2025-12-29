@@ -266,6 +266,7 @@ class PaiementLoyerController extends Controller
         // Create quittance record
         $quittance = Quittance::create([
             'paiement_loyer_id' => $paiement->id,
+            'numero' => $numero,
             'numero_quittance' => $numero,
             'montant' => $paiement->montant,
             'periode_debut' => $paiement->periode_debut,

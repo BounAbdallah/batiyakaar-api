@@ -11,6 +11,7 @@ class Quittance extends Model
 
     protected $fillable = [
         'paiement_loyer_id',
+        'numero',
         'numero_quittance',
         'montant',
         'periode_debut',
