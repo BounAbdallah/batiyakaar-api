@@ -20,11 +20,16 @@ class BailleurController extends Controller
         $user = \Illuminate\Support\Facades\Auth::user();
         $query = Bailleur::with('user');
 
-        // If Agency, only show Bailleurs who have properties managed by this agency
+        // If Agency, show Bailleurs who have properties managed by this agency 
+        // OR who were created by/belong to this agency (especially important for new landlords without properties)
         if ($user->user_type === 'agence') {
             $agenceId = $user->agence ? $user->agence->id : $user->agence_id;
-            $query->whereHas('biens', function ($q) use ($agenceId) {
-                $q->where('agence_id', $agenceId);
+            $query->where(function ($q) use ($agenceId) {
+                $q->whereHas('biens', function ($sub) use ($agenceId) {
+                    $sub->where('agence_id', $agenceId);
+                })->orWhereHas('user', function ($sub) use ($agenceId) {
+                    $sub->where('agence_id', $agenceId);
+                });
             });
         }
 
@@ -67,8 +72,12 @@ class BailleurController extends Controller
             $agenceId = $user->agence ? $user->agence->id : $user->agence_id;
 
             // Use the agenceId already determined above
-            $stats['total_bailleurs'] = Bailleur::whereHas('biens', function ($q) use ($agenceId) {
-                $q->where('agence_id', $agenceId);
+            $stats['total_bailleurs'] = Bailleur::where(function ($q) use ($agenceId) {
+                $q->whereHas('biens', function ($sub) use ($agenceId) {
+                    $sub->where('agence_id', $agenceId);
+                })->orWhereHas('user', function ($sub) use ($agenceId) {
+                    $sub->where('agence_id', $agenceId);
+                });
             })->count();
 
             // Total Biens for this agency
