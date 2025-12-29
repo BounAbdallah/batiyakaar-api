@@ -225,16 +225,46 @@ class DashboardController extends Controller
     {
         $activeLease = Bail::where('locataire_id', $id)->where('statut', 'actif')->first();
         $stats['has_active_lease'] = $activeLease ? true : false;
-        $stats['incidents_reported_count'] = Incident::whereHas('bail', function ($q) use ($id) {
-            $q->where('locataire_id', $id);
-        })->count();
+
+        // Incident counts by status
+        $stats['incident_stats'] = [
+            'ouvert' => Incident::whereHas('bail', function ($q) use ($id) {
+                $q->where('locataire_id', $id);
+            })->where('statut', 'ouvert')->count(),
+            'en_cours' => Incident::whereHas('bail', function ($q) use ($id) {
+                $q->where('locataire_id', $id);
+            })->where('statut', 'en_cours')->count(),
+            'resolu' => Incident::whereHas('bail', function ($q) use ($id) {
+                $q->where('locataire_id', $id);
+            })->where('statut', 'resolu')->count(),
+        ];
+
+        $stats['incidents_reported_count'] = array_sum($stats['incident_stats']);
 
         if ($activeLease) {
             $stats['rent_due'] = $activeLease->loyer_mensuel;
             $stats['lease_end_date'] = $activeLease->date_fin;
 
-            // Payments history for tenant
-            $stats['payments_history'] = $activeLease->paiementsLoyer()
+            // Payments history for charts (Last 12 months)
+            $paymentHistory = [];
+            for ($i = 11; $i >= 0; $i--) {
+                $date = now()->subMonths($i);
+                $monthName = $date->format('M Y');
+
+                $amount = $activeLease->paiementsLoyer()
+                    ->whereYear('date_paiement', $date->year)
+                    ->whereMonth('date_paiement', $date->month)
+                    ->sum('montant');
+
+                $paymentHistory[] = [
+                    'month' => $monthName,
+                    'amount' => $amount
+                ];
+            }
+            $stats['payment_history'] = $paymentHistory;
+
+            // Recent payments (for the list)
+            $stats['payments_history_list'] = $activeLease->paiementsLoyer()
                 ->latest()
                 ->take(6)
                 ->get()

@@ -455,4 +455,67 @@ class BailController extends Controller
 
         return $pdf->stream('mise_en_demeure_' . $bail->id . '.pdf');
     }
+
+    /**
+     * Get the monthly payment timeline for a specific lease
+     */
+    public function getTimeline(string $id)
+    {
+        $user = auth()->user();
+        $bail = Bail::with(['paiementsLoyer.quittance'])->findOrFail($id);
+
+        // Authorization check
+        if ($user->user_type === 'locataire' && $bail->locataire_id !== $user->locataire?->id) {
+            return response()->json(['success' => false, 'message' => 'Non autorisé'], 403);
+        }
+
+        $timeline = [];
+        $start = \Carbon\Carbon::parse($bail->date_debut)->startOfMonth();
+        $end = $bail->date_fin ? \Carbon\Carbon::parse($bail->date_fin)->startOfMonth() : now()->startOfMonth();
+
+        // If lease is active, we might want to show months up to current date even if date_fin is far in future
+        $now = now()->startOfMonth();
+        $limit = ($bail->statut === 'actif') ? $now : $end;
+
+        $current = clone $start;
+
+        while ($current <= $limit) {
+            $month = $current->month;
+            $year = $current->year;
+
+            // Find payment for this specific month/year
+            $payment = $bail->paiementsLoyer->filter(function ($p) use ($current) {
+                if (!$p->periode_debut)
+                    return false;
+                $pDate = \Carbon\Carbon::parse($p->periode_debut);
+                return $pDate->month === $current->month && $pDate->year === $current->year;
+            })->first();
+
+            $status = 'impaye';
+            $paymentId = null;
+            $quittanceId = null;
+
+            if ($payment) {
+                $status = $payment->statut;
+                $paymentId = $payment->id;
+                $quittanceId = $payment->quittance?->id;
+            }
+
+            $timeline[] = [
+                'month' => $current->translatedFormat('F'),
+                'year' => $year,
+                'date' => $current->format('Y-m'),
+                'status' => $status,
+                'payment_id' => $paymentId,
+                'quittance_id' => $quittanceId,
+            ];
+
+            $current->addMonth();
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => array_reverse($timeline) // Recent first
+        ]);
+    }
 }

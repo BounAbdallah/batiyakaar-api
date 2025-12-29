@@ -72,6 +72,7 @@ Route::prefix('v1')->group(function () {
         Route::get('/baux', [BailController::class, 'index']); // Tenants can view their own lease
         Route::post('/baux', [BailController::class, 'store'])->middleware('permission:baux.create');
         Route::get('/baux/{id}', [BailController::class, 'show']); // Tenants can view their lease details
+        Route::get('/baux/{id}/timeline', [BailController::class, 'getTimeline']);
         Route::put('/baux/{id}', [BailController::class, 'update'])->middleware('permission:baux.edit');
         Route::delete('/baux/{id}', [BailController::class, 'destroy'])->middleware('permission:baux.delete');
 
