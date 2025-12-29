@@ -226,4 +226,78 @@ class LocataireController extends Controller
             'status_distribution' => $statusDistribution,
         ]);
     }
+
+    /**
+     * Update the specified resource in storage.
+     */
+    public function update(Request $request, string $id)
+    {
+        $locataire = Locataire::findOrFail($id);
+        $user = $locataire->user;
+
+        $validated = $request->validate([
+            'prenom' => 'sometimes|string|max:255',
+            'nom' => 'sometimes|string|max:255',
+            'email' => 'nullable|string|email|max:255|unique:users,email,' . $user->id,
+            'telephone' => 'nullable|string|max:20',
+            'numero_cni' => 'nullable|string|max:50',
+            'date_naissance' => 'nullable|date|before:today',
+            'lieu_naissance' => 'nullable|string|max:255',
+            'cni_recto' => 'nullable|file|mimes:jpeg,png,jpg|max:2048',
+            'cni_verso' => 'nullable|file|mimes:jpeg,png,jpg|max:2048',
+        ]);
+
+        // Update User info
+        $userUpdateData = $request->only(['prenom', 'nom', 'email', 'telephone']);
+        if (!empty($userUpdateData)) {
+            $user->update($userUpdateData);
+        }
+
+        // Update Locataire info
+        $locataireUpdateData = $request->only(['numero_cni', 'date_naissance', 'lieu_naissance']);
+
+        // Handle file uploads
+        if ($request->hasFile('cni_recto')) {
+            // Delete old file if exists
+            if ($locataire->cni_recto) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($locataire->cni_recto);
+            }
+            $locataireUpdateData['cni_recto'] = $request->file('cni_recto')->store('cni/locataires', 'public');
+        }
+
+        if ($request->hasFile('cni_verso')) {
+            // Delete old file if exists
+            if ($locataire->cni_verso) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($locataire->cni_verso);
+            }
+            $locataireUpdateData['cni_verso'] = $request->file('cni_verso')->store('cni/locataires', 'public');
+        }
+
+        if (!empty($locataireUpdateData)) {
+            $locataire->update($locataireUpdateData);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Locataire mis à jour avec succès',
+            'data' => $locataire->load('user')
+        ]);
+    }
+
+    /**
+     * Remove the specified resource from storage.
+     */
+    public function destroy(string $id)
+    {
+        $locataire = Locataire::findOrFail($id);
+        $user = $locataire->user;
+
+        $locataire->delete();
+        $user->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Locataire supprimé avec succès'
+        ]);
+    }
 }

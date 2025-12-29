@@ -336,7 +336,7 @@ class BailleurController extends Controller
         $validated = $request->validate([
             'prenom' => 'sometimes|string|max:255',
             'nom' => 'sometimes|string|max:255',
-            'email' => 'sometimes|string|email|max:255|unique:users,email,' . $user->id,
+            'email' => 'nullable|string|email|max:255|unique:users,email,' . $user->id,
             'telephone' => 'nullable|string|max:20',
             'pays' => 'sometimes|string|max:100',
             'adresse_diaspora' => 'nullable|string',
