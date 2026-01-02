@@ -17,6 +17,12 @@ class Immeuble extends Model
         'nombre_etages',
         'bailleur_id',
         'agence_id',
+        'taux_commission',
+        'nombre_biens',
+        'type_mandat',
+        'duree_mandat',
+        'date_debut_mandat',
+        'date_fin_mandat',
     ];
 
     public function bailleur()

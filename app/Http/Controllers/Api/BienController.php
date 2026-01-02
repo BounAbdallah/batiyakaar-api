@@ -138,7 +138,7 @@ class BienController extends Controller
             'projet_construction_id' => 'nullable|exists:projets_construction,id',
             'reference' => 'required|string|unique:biens,reference',
             'adresse' => 'required_without:immeuble_id|nullable|string',
-            'type' => 'required|in:appartement,maison,studio,villa,commerce,terrain',
+            'type' => 'required|in:chambre,appartement,maison,studio,villa,commerce,terrain',
             'nombre_pieces' => 'nullable|integer|min:0',
             'surface' => 'nullable|numeric|min:0',
             'loyer_mensuel' => 'required|numeric|min:0',
@@ -257,7 +257,7 @@ class BienController extends Controller
         $validated = $request->validate([
             'reference' => 'sometimes|string|unique:biens,reference,' . $id,
             'adresse' => 'sometimes|nullable|string',
-            'type' => 'sometimes|in:appartement,maison,studio,villa,commerce,terrain',
+            'type' => 'sometimes|in:chambre,appartement,maison,studio,villa,commerce,terrain',
             'nombre_pieces' => 'nullable|integer|min:0',
             'surface' => 'nullable|numeric|min:0',
             'loyer_mensuel' => 'sometimes|numeric|min:0',

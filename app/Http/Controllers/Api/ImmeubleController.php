@@ -116,7 +116,13 @@ class ImmeubleController extends Controller
             'adresse' => 'required|string|max:255',
             'description' => 'nullable|string',
             'nombre_etages' => 'required|integer|min:0',
+            'nombre_biens' => 'nullable|integer|min:0',
             'bailleur_id' => 'required|exists:bailleurs,id',
+            'taux_commission' => 'nullable|numeric|min:0|max:100',
+            'type_mandat' => 'nullable|in:gerance_totale,recouvrement_seulement,declaration_impots',
+            'duree_mandat' => 'nullable|integer|min:1',
+            'date_debut_mandat' => 'nullable|date',
+            'date_fin_mandat' => 'nullable|date|after_or_equal:date_debut_mandat',
         ]);
 
         $data = $validated;
@@ -247,6 +253,12 @@ class ImmeubleController extends Controller
             'nom' => 'sometimes|string|max:255',
             'adresse' => 'sometimes|string|max:255',
             'description' => 'nullable|string',
+            'nombre_biens' => 'nullable|integer|min:0',
+            'taux_commission' => 'sometimes|numeric|min:0|max:100',
+            'type_mandat' => 'sometimes|in:gerance_totale,recouvrement_seulement,declaration_impots',
+            'duree_mandat' => 'sometimes|integer|min:1',
+            'date_debut_mandat' => 'nullable|date',
+            'date_fin_mandat' => 'nullable|date|after_or_equal:date_debut_mandat',
         ]);
 
         $immeuble->update($validated);
@@ -289,5 +301,25 @@ class ImmeubleController extends Controller
             }
         }
         // Admin gets pass
+    }
+
+    public function downloadMandat($id)
+    {
+        $immeuble = Immeuble::with(['bailleur.user', 'agence', 'agence.user', 'etages.biens'])->findOrFail($id);
+        $this->checkOwnership(request()->user(), $immeuble);
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdfs.mandat_gerance_immeuble', compact('immeuble'));
+
+        return $pdf->download('mandat_gerance_immeuble_' . $immeuble->nom . '.pdf');
+    }
+
+    public function viewMandat($id)
+    {
+        $immeuble = Immeuble::with(['bailleur.user', 'agence', 'agence.user', 'etages.biens'])->findOrFail($id);
+        $this->checkOwnership(request()->user(), $immeuble);
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdfs.mandat_gerance_immeuble', compact('immeuble'));
+
+        return $pdf->stream('mandat_gerance_immeuble_' . $immeuble->nom . '.pdf');
     }
 }

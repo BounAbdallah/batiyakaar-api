@@ -36,6 +36,7 @@ Route::prefix('v1')->group(function () {
     Route::get('/baux/{id}/demande/view', [BailController::class, 'viewDemandLetter']);
     Route::get('/paiements-loyer/{id}/dette/view', [PaiementLoyerController::class, 'viewDebtAcknowledgment']);
 
+
     // Protected routes
     Route::middleware('auth:sanctum')->group(function () {
         // Auth
@@ -134,6 +135,8 @@ Route::prefix('v1')->group(function () {
         Route::delete('/bailleurs/{id}', [\App\Http\Controllers\Api\BailleurController::class, 'destroy'])->middleware('permission:bailleurs.delete');
 
         // Immeubles
+        Route::get('/immeubles/{id}/mandat/view', [\App\Http\Controllers\Api\ImmeubleController::class, 'viewMandat'])->middleware('permission:immeubles.view');
+        Route::get('/immeubles/{id}/mandat/download', [\App\Http\Controllers\Api\ImmeubleController::class, 'downloadMandat'])->middleware('permission:immeubles.view');
         Route::get('/immeubles', [\App\Http\Controllers\Api\ImmeubleController::class, 'index'])->middleware('permission:immeubles.view');
         Route::post('/immeubles', [\App\Http\Controllers\Api\ImmeubleController::class, 'store'])->middleware('permission:immeubles.create');
         Route::get('/immeubles/{id}', [\App\Http\Controllers\Api\ImmeubleController::class, 'show'])->middleware('permission:immeubles.view');
