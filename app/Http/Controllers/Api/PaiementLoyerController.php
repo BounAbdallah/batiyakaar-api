@@ -706,8 +706,8 @@ class PaiementLoyerController extends Controller
                 $parts = explode('-', $clientReference);
                 if (count($parts) >= 3 && $parts[0] === 'RENT') {
                     $bailId = $parts[1];
-                    $month = isset($parts[4]) ? (int) $parts[4] : now()->month;
-                    $year = isset($parts[5]) ? (int) $parts[5] : now()->year;
+                    $month = isset($parts[3]) ? (int) $parts[3] : now()->month;
+                    $year = isset($parts[4]) ? (int) $parts[4] : now()->year;
 
                     // Logic to confirm payment
                     // Since we don't store a pending payment record beforehand in 'initiate',
