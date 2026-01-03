@@ -581,6 +581,8 @@ class PaiementLoyerController extends Controller
         $validated = $request->validate([
             'bail_id' => 'required|exists:baux,id',
             'montant' => 'required|numeric|min:1',
+            'month' => 'nullable|integer|min:1|max:12',
+            'year' => 'nullable|integer|min:2020|max:2030',
         ]);
 
         $bail = \App\Models\Bail::findOrFail($validated['bail_id']);
@@ -592,8 +594,14 @@ class PaiementLoyerController extends Controller
                 return response()->json(['message' => 'Unauthorized'], 403);
             }
         }
-        // Generate a simplified client reference
-        $clientReference = 'RENT-' . $bail->id . '-' . time();
+
+        // Month/Year handling
+        $month = $validated['month'] ?? now()->month;
+        $year = $validated['year'] ?? now()->year;
+
+        // Generate a simplified client reference with Month/Year
+        // Format: RENT-{bail_id}-{timestamp}-{month}-{year}
+        $clientReference = 'RENT-' . $bail->id . '-' . time() . '-' . $month . '-' . $year;
 
         // Define URLs (Frontend routes)
         // Use production URL if available or fallback to env.
@@ -693,10 +701,13 @@ class PaiementLoyerController extends Controller
 
             if ($clientReference && $paymentStatus === 'succeeded') {
                 // Find payment/lease by client reference
-                // Format: RENT-{bail_id}-{timestamp}
+                // Match format: RENT-{bail_id}-{timestamp}-{month}-{year}
+                // Fallback to old format: RENT-{bail_id}-{timestamp}
                 $parts = explode('-', $clientReference);
                 if (count($parts) >= 3 && $parts[0] === 'RENT') {
                     $bailId = $parts[1];
+                    $month = isset($parts[4]) ? (int) $parts[4] : now()->month;
+                    $year = isset($parts[5]) ? (int) $parts[5] : now()->year;
 
                     // Logic to confirm payment
                     // Since we don't store a pending payment record beforehand in 'initiate',
@@ -719,8 +730,8 @@ class PaiementLoyerController extends Controller
                             return response()->json(['status' => 'already_processed']);
                         }
 
-                        // Determine Period (Current Month)
-                        $dueDate = now()->setDay(1);
+                        // Determine Period based on Reference or Current Date
+                        $dueDate = \Carbon\Carbon::createFromDate($year, $month, 1);
 
                         // Create Payment Record
                         $paiement = PaiementLoyer::create([
