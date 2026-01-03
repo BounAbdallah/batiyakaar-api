@@ -278,9 +278,15 @@ class PaiementLoyerController extends Controller
 
         // Generate PDF and send email to tenant
         try {
+            // Ensure temp directory exists
+            $tempDir = storage_path('app/temp');
+            if (!file_exists($tempDir)) {
+                mkdir($tempDir, 0755, true);
+            }
+
             // Generate PDF
             $pdf = Pdf::loadView('pdfs.quittance', ['quittance' => $quittance]);
-            $pdfPath = storage_path('app/temp/quittance_' . $quittance->id . '_' . time() . '.pdf');
+            $pdfPath = $tempDir . '/quittance_' . $quittance->id . '_' . time() . '.pdf';
             $pdf->save($pdfPath);
 
             // Send email to tenant
