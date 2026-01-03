@@ -30,7 +30,10 @@ class AgencyPaymentNotification extends Notification
      */
     public function via(object $notifiable): array
     {
-        return ['mail', 'database'];
+        // Removed 'database' channel because the 'notifications' table schema is custom (enum type)
+        // and incompatible with Laravel's standard DatabaseChannel.
+        // We will insert the notification manually in the Controller if needed.
+        return ['mail'];
     }
 
     /**

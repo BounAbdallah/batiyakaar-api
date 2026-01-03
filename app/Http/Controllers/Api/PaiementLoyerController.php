@@ -752,12 +752,48 @@ class PaiementLoyerController extends Controller
         \Illuminate\Support\Facades\Log::info("Payment validated via Webhook for Bail #{$bail->id}. Amount: {$amount}");
 
         // Notify Agency User(s)
+        // Notify Agency User(s)
+        $userToNotify = null;
         if ($bail->agence && $bail->agence->user) {
-            $bail->agence->user->notify(new \App\Notifications\AgencyPaymentNotification($bail, $amount));
+            $userToNotify = $bail->agence->user;
         } elseif ($bail->bien->bailleur && $bail->bien->bailleur->user) {
-            // If direct landlord management
-            $bail->bien->bailleur->user->notify(new \App\Notifications\AgencyPaymentNotification($bail, $amount));
+            $userToNotify = $bail->bien->bailleur->user;
         }
+
+        if ($userToNotify) {
+            // Send Email (Standard Laravel)
+            try {
+                $userToNotify->notify(new \App\Notifications\AgencyPaymentNotification($bail, $amount));
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::error("Email notification failed: " . $e->getMessage());
+            }
+
+            // Insert into Database (Custom Table)
+            try {
+                \Illuminate\Support\Facades\DB::table('notifications')->insert([
+                    'user_id' => $userToNotify->id,
+                    'titre' => 'Paiement Wave Reçu',
+                    'message' => "Paiement de " . number_format($amount, 0, ',', ' ') . " FCFA pour le bien " . $bail->bien->reference,
+                    'type' => 'paiement', // Matches enum
+                    'date_envoi' => now(),
+                    'lue' => false,
+                    'metadata' => json_encode([
+                        'bail_id' => $bail->id,
+                        'amount' => $amount,
+                        'reference' => $this->getReferenceTransaction($bail, $amount) ?? 'N/A'
+                    ]),
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::error("Database notification failed: " . $e->getMessage());
+            }
+        }
+    }
+
+    private function getReferenceTransaction($bail, $amount)
+    {
+        return 'WAVE-' . time(); // Simple fallback if not passed directly
     }
 
     /**
