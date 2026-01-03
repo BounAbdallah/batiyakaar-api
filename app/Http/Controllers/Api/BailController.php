@@ -91,6 +91,17 @@ class BailController extends Controller
             'caution' => 'required|numeric|min:0',
         ]);
 
+        // Check if property is already leased
+        $existingBail = Bail::where('bien_id', $validated['bien_id'])
+            ->where('statut', 'actif')
+            ->exists();
+
+        if ($existingBail) {
+            return response()->json([
+                'message' => 'Ce bien fait déjà l\'objet d\'un bail actif. Veuillez résilier le bail existant avant d\'en créer un nouveau.'
+            ], 422);
+        }
+
         $validated['statut'] = 'actif';
 
         $bail = Bail::create($validated);
@@ -165,6 +176,20 @@ class BailController extends Controller
             'caution' => 'sometimes|numeric|min:0',
             'statut' => 'sometimes|in:actif,expire,resilie',
         ]);
+
+        // Check if activating a lease on an occupied property
+        if (isset($validated['statut']) && $validated['statut'] === 'actif' && $bail->statut !== 'actif') {
+            $existingBail = Bail::where('bien_id', $bail->bien_id)
+                ->where('statut', 'actif')
+                ->where('id', '!=', $id)
+                ->exists();
+
+            if ($existingBail) {
+                return response()->json([
+                    'message' => 'Impossible d\'activer ce bail : ce bien est déjà loué sous un autre contrat actif.'
+                ], 422);
+            }
+        }
 
         $bail->update($validated);
 
@@ -471,12 +496,11 @@ class BailController extends Controller
 
         $timeline = [];
         $start = \Carbon\Carbon::parse($bail->date_debut)->startOfMonth();
-        $end = $bail->date_fin ? \Carbon\Carbon::parse($bail->date_fin)->startOfMonth() : now()->startOfMonth();
+        $end = $bail->date_fin ? \Carbon\Carbon::parse($bail->date_fin)->endOfMonth() : now()->addYear()->endOfMonth(); // Show at least 1 year if no end date
 
-        // If lease is active, we might want to show months up to current date even if date_fin is far in future
+        $limit = $end; // Show full timeline up to end of contract
+
         $now = now()->startOfMonth();
-        $limit = ($bail->statut === 'actif') ? $now : $end;
-
         $current = clone $start;
 
         while ($current <= $limit) {
@@ -499,15 +523,24 @@ class BailController extends Controller
                 $status = $payment->statut;
                 $paymentId = $payment->id;
                 $quittanceId = $payment->quittance?->id;
+            } else {
+                // If no payment and date is in future, set status to 'non_echu'
+                if ($current > $now) {
+                    $status = 'non_echu';
+                }
             }
 
+            $currentMonthName = $current->locale('fr')->translatedFormat('F');
+
             $timeline[] = [
-                'month' => $current->translatedFormat('F'),
+                'month' => ucfirst($currentMonthName),
                 'year' => $year,
                 'date' => $current->format('Y-m'),
                 'status' => $status,
                 'payment_id' => $paymentId,
                 'quittance_id' => $quittanceId,
+                'amount' => $bail->loyer_mensuel, // Ensure amount is available for frontend
+                'lease_id' => $bail->id // Ensure lease_id is available
             ];
 
             $current->addMonth();
@@ -515,7 +548,7 @@ class BailController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => array_reverse($timeline) // Recent first
+            'data' => array_reverse($timeline) // Recent first (future dates at top)
         ]);
     }
 }

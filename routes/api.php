@@ -36,6 +36,8 @@ Route::prefix('v1')->group(function () {
     Route::get('/baux/{id}/demande/view', [BailController::class, 'viewDemandLetter']);
     Route::get('/paiements-loyer/{id}/dette/view', [PaiementLoyerController::class, 'viewDebtAcknowledgment']);
 
+    // Wave Webhook (Public)
+    Route::post('/webhooks/wave', [PaiementLoyerController::class, 'handleWebhook']);
 
     // Protected routes
     Route::middleware('auth:sanctum')->group(function () {
@@ -78,6 +80,8 @@ Route::prefix('v1')->group(function () {
         Route::delete('/baux/{id}', [BailController::class, 'destroy'])->middleware('permission:baux.delete');
 
         // Paiements Loyer
+        Route::post('/paiements-loyer/wave/initiate', [PaiementLoyerController::class, 'initiateWavePayment']);
+        Route::post('/paiements-loyer/wave/confirm', [PaiementLoyerController::class, 'confirmWavePayment']);
         Route::get('/paiements-loyer/unpaid', [PaiementLoyerController::class, 'getUnpaidRents'])->middleware('permission:paiements.view');
         Route::get('/paiements-loyer/{id}/quittance', [PaiementLoyerController::class, 'downloadQuittance']); // Tenants can download their receipts
         Route::get('/paiements-loyer/{id}/dette/download', [PaiementLoyerController::class, 'downloadDebtAcknowledgment'])->middleware('permission:paiements.view');

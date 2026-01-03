@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Models\Bien;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class BienController extends Controller
 {
@@ -136,7 +137,14 @@ class BienController extends Controller
             'immeuble_id' => 'nullable|exists:immeubles,id',
             'etage_id' => 'nullable|exists:etages,id',
             'projet_construction_id' => 'nullable|exists:projets_construction,id',
-            'reference' => 'required|string|unique:biens,reference',
+            'reference' => [
+                'required',
+                'string',
+                Rule::unique('biens')->where(function ($query) use ($request) {
+                    return $query->where('immeuble_id', $request->immeuble_id)
+                        ->where('etage_id', $request->etage_id);
+                })
+            ],
             'adresse' => 'required_without:immeuble_id|nullable|string',
             'type' => 'required|in:chambre,appartement,maison,studio,villa,commerce,terrain',
             'nombre_pieces' => 'nullable|integer|min:0',
@@ -255,7 +263,18 @@ class BienController extends Controller
         $this->checkOwnership($request->user(), $bien);
 
         $validated = $request->validate([
-            'reference' => 'sometimes|string|unique:biens,reference,' . $id,
+            'reference' => [
+                'sometimes',
+                'string',
+                Rule::unique('biens')->where(function ($query) use ($request, $bien) {
+                    // Use request input if present, otherwise fallback to existing bien value
+                    $immeubleId = $request->has('immeuble_id') ? $request->immeuble_id : $bien->immeuble_id;
+                    $etageId = $request->has('etage_id') ? $request->etage_id : $bien->etage_id;
+
+                    return $query->where('immeuble_id', $immeubleId)
+                        ->where('etage_id', $etageId);
+                })->ignore($id)
+            ],
             'adresse' => 'sometimes|nullable|string',
             'type' => 'sometimes|in:chambre,appartement,maison,studio,villa,commerce,terrain',
             'nombre_pieces' => 'nullable|integer|min:0',

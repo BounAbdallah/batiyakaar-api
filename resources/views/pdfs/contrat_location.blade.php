@@ -206,7 +206,7 @@
         <p>
             <strong>Et monsieur/madame {{ $bail->locataire->user->prenom }} {{ $bail->locataire->user->nom }}</strong>
             @if($bail->locataire->user->date_naissance)
-                né(e) le {{ \Carbon\Carbon::parse($bail->locataire->user->date_naissance)->format('d F Y') }}
+                né(e) le {{ \Carbon\Carbon::parse($bail->locataire->user->date_naissance)->locale('fr')->isoFormat('DD MMMM YYYY') }}
                 @if($bail->locataire->user->lieu_naissance)
                     à {{ $bail->locataire->user->lieu_naissance }}
                 @endif
@@ -288,7 +288,7 @@
             <p><strong>Prise d’effet :</strong></p>
             <p>
                 Le bail est conclu pour une durée indéterminée et prend effet le
-                <strong>{{ \Carbon\Carbon::parse($bail->date_debut)->format('d F Y') }}</strong>.
+                <strong>{{ \Carbon\Carbon::parse($bail->date_debut)->locale('fr')->isoFormat('DD MMMM YYYY') }}</strong>.
                 Le renouvellement se fera après concertation des deux parties.
             </p>
             <p><strong>Préavis :</strong></p>
@@ -365,7 +365,7 @@
 
         <div class="signature-section">
             <div class="signature-date">
-                Fait à Dakar, le {{ \Carbon\Carbon::parse($bail->created_at)->format('d F Y') }}
+                Fait à Dakar, le {{ \Carbon\Carbon::parse($bail->created_at)->locale('fr')->isoFormat('DD MMMM YYYY') }}
             </div>
 
             <div class="signature-boxes">
