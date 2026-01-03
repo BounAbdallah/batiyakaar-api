@@ -705,15 +705,34 @@ class PaiementLoyerController extends Controller
                     // Re-fetching bail to perform logic
                     $bail = \App\Models\Bail::find($bailId);
                     if ($bail) {
-                        // Check if payment already recorded to avoid duplicates?
-                        // For now, accept it.
+                        // Implement Idempotency: Check if payment with this reference exists
+                        $existingPayment = PaiementLoyer::where('reference_transaction', $clientReference)->first();
 
-                        // We need the month/year. Usually current month or specified.
-                        // Assuming current month payment for simplicity or extracted from somewhere.
-                        // But wait, the Frontend 'confirmWavePayment' logic does this manually.
-                        // Webhook is redundant if Frontend works, BUT Webhook is more reliable.
+                        if ($existingPayment) {
+                            \Illuminate\Support\Facades\Log::info("Payment already processed for ref: {$clientReference}");
+                            return response()->json(['status' => 'already_processed']);
+                        }
 
-                        // Let's create the payment if not exists.
+                        // Determine Period (Current Month)
+                        $dueDate = now()->setDay(1);
+
+                        // Create Payment Record
+                        $paiement = PaiementLoyer::create([
+                            'bail_id' => $bail->id,
+                            'montant' => $bail->loyer_mensuel, // Use rent amount, not Wave amount (which includes fees)
+                            'date_paiement' => now(),
+                            'date_prevue' => $dueDate,
+                            'mode_paiement' => 'mobile_money',
+                            'reference_transaction' => $clientReference,
+                            'statut' => 'paye', // Direct success
+                            'periode_debut' => $dueDate->format('Y-m-d'),
+                            'periode_fin' => $dueDate->copy()->endOfMonth()->format('Y-m-d'),
+                            'montant_attendu' => $bail->loyer_mensuel
+                        ]);
+
+                        // Auto-ventilation & Receipt
+                        $this->ventilerPaiement($paiement);
+                        $this->genererQuittance($paiement);
 
                         // Notify Agency
                         $this->notifyAgencyOfPayment($bail, $session['amount']);
@@ -757,6 +776,16 @@ class PaiementLoyerController extends Controller
             'mode_paiement' => 'mobile_money',
             'date_paiement' => now(),
         ]);
+
+        // Check for existing payment
+        $existing = PaiementLoyer::where('reference_transaction', $validated['reference_transaction'])->first();
+        if ($existing) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Paiement déjà enregistré.',
+                'data' => $existing
+            ]);
+        }
 
         return $this->store($request);
     }
