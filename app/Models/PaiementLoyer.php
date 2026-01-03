@@ -29,7 +29,7 @@ class PaiementLoyer extends Model
         return [
             'montant' => 'decimal:2',
             'montant_attendu' => 'decimal:2',
-            'date_paiement' => 'date',
+            'date_paiement' => 'datetime',
             'date_prevue' => 'date',
         ];
     }
