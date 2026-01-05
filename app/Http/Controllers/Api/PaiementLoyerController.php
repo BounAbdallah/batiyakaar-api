@@ -263,7 +263,6 @@ class PaiementLoyerController extends Controller
         // Create quittance record
         $quittance = Quittance::create([
             'paiement_loyer_id' => $paiement->id,
-            'numero' => $numero,
             'numero_quittance' => $numero,
             'montant' => $paiement->montant,
             'periode_debut' => $paiement->periode_debut,
@@ -445,7 +444,7 @@ class PaiementLoyerController extends Controller
         }
 
         $pdf = Pdf::loadView('documents.quittance', compact('paiement'));
-        $filename = 'quittance-' . ($paiement->quittance->numero ?? $paiement->id) . '.pdf';
+        $filename = 'quittance-' . ($paiement->quittance->numero_quittance ?? $paiement->id) . '.pdf';
 
         return $pdf->download($filename);
     }
@@ -624,13 +623,33 @@ class PaiementLoyerController extends Controller
         $errorUrl = $waveReturnUrl . '/dashboard/paiements/error';
         $successUrl = $waveReturnUrl . "/dashboard/paiements/success?ref={$clientReference}&bail_id={$validated['bail_id']}&amount={$originalAmount}";
 
+        // Generate Motif
+        // Use french locale for month name if possible, or simple array mapping
+        $months = [
+            1 => 'Janvier',
+            2 => 'Février',
+            3 => 'Mars',
+            4 => 'Avril',
+            5 => 'Mai',
+            6 => 'Juin',
+            7 => 'Juillet',
+            8 => 'Août',
+            9 => 'Septembre',
+            10 => 'Octobre',
+            11 => 'Novembre',
+            12 => 'Décembre'
+        ];
+        $monthName = $months[$month] ?? $month;
+        $motif = "Paiement Loyer - $monthName $year";
+
         try {
             $session = $waveService->createCheckoutSession(
                 $waveAmount,
                 'XOF',
                 $errorUrl,
                 $successUrl,
-                $clientReference
+                $clientReference,
+                $motif
             );
 
             \Illuminate\Support\Facades\Log::info('Wave Session Created', ['session' => $session]);

@@ -105,7 +105,7 @@
 
     <div class="header">
         <div class="title">QUITTANCE DE LOYER</div>
-        <div class="subtitle">N° {{ $paiement->quittance->numero ?? 'PROVISOIRE' }}</div>
+        <div class="subtitle">N° {{ $paiement->quittance->numero_quittance ?? 'PROVISOIRE' }}</div>
     </div>
 
     <div class="box">

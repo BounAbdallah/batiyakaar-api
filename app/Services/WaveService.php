@@ -21,20 +21,29 @@ class WaveService
      * Note: This is an estimated implementation based on standard Wave integration patterns.
      * The official Checkout API documentation should be consulted for exact field names.
      */
-    public function createCheckoutSession($amount, $currency = 'XOF', $errorUrl, $successUrl, $clientReference)
+    public function createCheckoutSession($amount, $currency, $errorUrl, $successUrl, $clientReference, $description = null)
     {
         // Standard Checkout Session payload structure
         // Verify this against your specific Wave Developer docs if it differs
+        $data = [
+            'amount' => (string) $amount, // Wave usually expects string for amounts
+            'currency' => $currency,
+            'error_url' => $errorUrl,
+            'success_url' => $successUrl,
+            'client_reference' => $clientReference,
+        ];
+
+        if ($description) {
+            // "description" is a common field for payment intent/checkout sessions
+            // If Wave API uses a different key (e.g. 'product_name'), update here.
+            // Based on generic integration:
+            $data['description'] = $description;
+        }
+
         $response = Http::withHeaders([
             'Authorization' => 'Bearer ' . $this->apiKey,
             'Content-Type' => 'application/json',
-        ])->post($this->baseUrl . '/checkout/sessions', [
-                    'amount' => (string) $amount, // Wave usually expects string for amounts
-                    'currency' => $currency,
-                    'error_url' => $errorUrl,
-                    'success_url' => $successUrl,
-                    'client_reference' => $clientReference,
-                ]);
+        ])->post($this->baseUrl . '/checkout/sessions', $data);
 
         if ($response->successful()) {
             return $response->json();
