@@ -21,7 +21,7 @@ class WaveService
      * Note: This is an estimated implementation based on standard Wave integration patterns.
      * The official Checkout API documentation should be consulted for exact field names.
      */
-    public function createCheckoutSession($amount, $currency, $errorUrl, $successUrl, $clientReference, $description = null)
+    public function createCheckoutSession($amount, $currency, $errorUrl, $successUrl, $clientReference, $description = null, $customer = [])
     {
         // Standard Checkout Session payload structure
         // Verify this against your specific Wave Developer docs if it differs
@@ -38,6 +38,10 @@ class WaveService
             // If Wave API uses a different key (e.g. 'product_name'), update here.
             // Based on generic integration:
             $data['description'] = $description;
+        }
+
+        if (!empty($customer)) {
+            $data['customer'] = $customer;
         }
 
         $response = Http::withHeaders([

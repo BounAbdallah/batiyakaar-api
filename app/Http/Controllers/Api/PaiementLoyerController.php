@@ -642,6 +642,19 @@ class PaiementLoyerController extends Controller
         $monthName = $months[$month] ?? $month;
         $motif = "Paiement Loyer - $monthName $year";
 
+        // Construct Customer Object
+        // Usually requires name, maybe email/phone
+        $locataireUser = $bail->locataire->user;
+        $customer = [
+            'name' => $locataireUser->prenom . ' ' . $locataireUser->nom,
+        ];
+        if ($locataireUser->email) {
+            $customer['email'] = $locataireUser->email;
+        }
+        if ($locataireUser->telephone) {
+            $customer['phone_number'] = $locataireUser->telephone;
+        }
+
         try {
             $session = $waveService->createCheckoutSession(
                 $waveAmount,
@@ -649,7 +662,8 @@ class PaiementLoyerController extends Controller
                 $errorUrl,
                 $successUrl,
                 $clientReference,
-                $motif
+                $motif,
+                $customer
             );
 
             \Illuminate\Support\Facades\Log::info('Wave Session Created', ['session' => $session]);
