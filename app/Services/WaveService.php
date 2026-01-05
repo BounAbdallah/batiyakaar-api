@@ -13,7 +13,15 @@ class WaveService
     public function __construct()
     {
         $this->baseUrl = 'https://api.wave.com/v1';
-        $this->apiKey = trim(env('WAVE_API_KEY'));
+        $apiKey = env('WAVE_API_KEY');
+        $this->apiKey = $apiKey ? trim($apiKey) : null;
+    }
+
+    private function checkApiKey()
+    {
+        if (empty($this->apiKey)) {
+            throw new \Exception("Wave API Key is missing. Check WAVE_API_KEY in .env");
+        }
     }
 
     /**
@@ -23,6 +31,8 @@ class WaveService
      */
     public function createCheckoutSession($amount, $currency, $errorUrl, $successUrl, $clientReference, $description = null, $customer = [])
     {
+        $this->checkApiKey();
+
         // Standard Checkout Session payload structure
         // Verify this against your specific Wave Developer docs if it differs
         $data = [
