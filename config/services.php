@@ -39,4 +39,10 @@ return [
         'webhook_url' => env('DISCORD_WEBHOOK_URL'),
     ],
 
+    'wave' => [
+        'api_key' => env('WAVE_API_KEY'),
+        'webhook_secret' => env('WAVE_WEBHOOK_SECRET'),
+        'base_url' => env('WAVE_BASE_URL', 'https://api.wave.com/v1'),
+    ],
+
 ];

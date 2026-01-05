@@ -12,15 +12,16 @@ class WaveService
 
     public function __construct()
     {
-        $this->baseUrl = 'https://api.wave.com/v1';
-        $apiKey = env('WAVE_API_KEY');
+        $this->baseUrl = config('services.wave.base_url', 'https://api.wave.com/v1');
+        $apiKey = config('services.wave.api_key');
+        // Ensure we don't pass null to trim if config is missing (though config returns null by default, trim(null) is deprecated)
         $this->apiKey = $apiKey ? trim($apiKey) : null;
     }
 
     private function checkApiKey()
     {
         if (empty($this->apiKey)) {
-            throw new \Exception("Wave API Key is missing. Check WAVE_API_KEY in .env");
+            throw new \Exception("Wave API Key is missing. Check WAVE_API_KEY in .env and run 'php artisan config:clear'");
         }
     }
 
@@ -43,16 +44,19 @@ class WaveService
             'client_reference' => $clientReference,
         ];
 
+        // Wave API rejected 'description' and 'customer' fields with "extra fields not permitted"
+        // So we revert to the standard payload.
+        // We will try to bake the motif into client_reference if possible, but for now we must fix the 500 error.
+
+        /* 
+        // Previously attempted (rejected by API):
         if ($description) {
-            // "description" is a common field for payment intent/checkout sessions
-            // If Wave API uses a different key (e.g. 'product_name'), update here.
-            // Based on generic integration:
             $data['description'] = $description;
         }
-
         if (!empty($customer)) {
             $data['customer'] = $customer;
         }
+        */
 
         $response = Http::withHeaders([
             'Authorization' => 'Bearer ' . $this->apiKey,
