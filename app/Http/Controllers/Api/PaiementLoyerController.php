@@ -642,22 +642,27 @@ class PaiementLoyerController extends Controller
         $monthName = $months[$month] ?? $month;
         $motif = "Paiement Loyer - $monthName $year";
 
+        $monthName = $months[$month] ?? $month;
+        $motif = "Paiement Loyer - $monthName $year";
+
         // Construct Customer Object
-        // Usually requires name, maybe email/phone
-        $locataireUser = $bail->locataire->user;
-        $customer = [
-            'name' => $locataireUser->prenom . ' ' . $locataireUser->nom,
-        ];
-        if ($locataireUser->email) {
-            $customer['email'] = $locataireUser->email;
-        }
-        if ($locataireUser->telephone) {
-            $customer['phone_number'] = $locataireUser->telephone;
+        // Only sending name to avoid validation errors (e.g. phone format E.164)
+        $locataireUser = optional($bail->locataire)->user;
+        $customer = [];
+
+        if ($locataireUser) {
+            $customer['name'] = trim($locataireUser->prenom . ' ' . $locataireUser->nom);
+
+            // Optional: generic email if missing
+            // $customer['email'] = $locataireUser->email ?? 'no-email@example.com'; 
+        } else {
+            // Fallback if no user attached (shouldn't happen for valid lease)
+            $customer['name'] = 'Locataire - Bail ' . $bail->id;
         }
 
         try {
             $session = $waveService->createCheckoutSession(
-                $waveAmount,
+                (int) $waveAmount, // Ensure integer
                 'XOF',
                 $errorUrl,
                 $successUrl,

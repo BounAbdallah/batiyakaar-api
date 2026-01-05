@@ -19,13 +19,16 @@ echo "Verifying arguments passed to createCheckoutSession:\n";
 echo "Amount: $amount\n";
 echo "Description: $description\n";
 echo "Customer: " . json_encode($customer) . "\n";
-
 if (empty($customer['name'])) {
 echo "FAILURE: Customer name missing.\n";
 return false;
 }
 
-echo "SUCCESS: Customer data present.\n";
+if (isset($customer['phone_number']) || isset($customer['email'])) {
+echo "WARNING: Phone or Email present when they strictly shouldn't be for this test.\n";
+}
+
+echo "SUCCESS: Customer data present (Name only).\n";
 return true;
 })
 ->andReturn(['url' => 'http://mock-url']);
