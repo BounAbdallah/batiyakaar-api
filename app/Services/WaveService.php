@@ -78,8 +78,8 @@ class WaveService
         $this->checkApiKey();
 
         // Wave Payout API URL (Production)
-        // Usually: https://api.wave.com/v1/payouts
-        $url = $this->baseUrl . '/payouts';
+        // Usually: https://api.wave.com/v1/payout
+        $url = $this->baseUrl . '/payout';
 
         $data = [
             'amount' => (string) $amount,
