@@ -248,13 +248,22 @@ class PaiementLoyerController extends Controller
         // 1.5% frais client - 1.0% frais Wave Payout = 0.5% Marge
         $montant_plateforme = $montant * 0.005;
 
-        Ventilation::create([
+        $ventilation = Ventilation::create([
             'paiement_loyer_id' => $paiement->id,
             'montant_agence' => $montant_agence,
             'montant_plateforme' => $montant_plateforme,
             'montant_bailleur' => $montant_bailleur,
             'date_ventilation' => now(),
         ]);
+
+        // Notify Admins of Commission
+        if ($montant_plateforme > 0) {
+            $admins = \App\Models\User::where('user_type', 'admin')->get();
+            // Also notify any user with 'admin' role if using Spatie permissions, but standard user_type check is safer for now based on prev code
+            foreach ($admins as $admin) {
+                $admin->notify(new \App\Notifications\CommissionEarned($ventilation));
+            }
+        }
     }
 
     /**
