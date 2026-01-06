@@ -792,6 +792,42 @@ class PaiementLoyerController extends Controller
                         // Notify Agency
                         $this->notifyAgencyOfPayment($bail, $session['amount']);
 
+                        // --- WAVE CASHOUT IMPLEMENTATION ---
+                        try {
+                            // Reload to get Agency User
+                            $bail->load('agence.user');
+
+                            if ($bail->agence && $bail->agence->user && $bail->agence->user->telephone) {
+                                // Determine Amount: Full Rent (as requested by User)
+                                // The agency receives the full rent amount.
+                                $payoutAmount = $paiement->montant;
+
+                                if ($payoutAmount > 0) {
+                                    $recipientName = $bail->agence->raison_sociale ?? ($bail->agence->user->prenom . ' ' . $bail->agence->user->nom);
+
+                                    // Instantiate service manually or use dependency injection if cleaner
+                                    // Here we use the injected $waveService if passed to handleWebhook, or resolve it
+                                    $waveService = app(\App\Services\WaveService::class);
+
+                                    $payoutResult = $waveService->payout(
+                                        (int) $payoutAmount,
+                                        'XOF',
+                                        $recipientName,
+                                        $bail->agence->user->telephone
+                                    );
+
+                                    if ($payoutResult) {
+                                        \Illuminate\Support\Facades\Log::info("Wave Payout Success for Bail {$bail->id}", $payoutResult);
+                                    } else {
+                                        \Illuminate\Support\Facades\Log::error("Wave Payout Failed for Bail {$bail->id}");
+                                    }
+                                }
+                            }
+                        } catch (\Exception $e) {
+                            \Illuminate\Support\Facades\Log::error('Wave Payout Exception: ' . $e->getMessage());
+                        }
+                        // -----------------------------------
+
                         return response()->json(['status' => 'processed']);
                     }
                 }

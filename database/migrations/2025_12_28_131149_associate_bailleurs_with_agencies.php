@@ -13,23 +13,27 @@ return new class extends Migration {
     {
         // Associate existing bailleurs with their agencies
         // Get agency_id from the bailleur's first bien using a subquery
-        DB::statement("
-            UPDATE users u
-            SET u.agence_id = (
-                SELECT bien.agence_id 
-                FROM bailleurs b 
-                INNER JOIN biens bien ON bien.bailleur_id = b.id 
-                WHERE b.user_id = u.id 
-                LIMIT 1
-            )
-            WHERE u.user_type = 'bailleur' 
-            AND u.agence_id IS NULL
-            AND EXISTS (
-                SELECT 1 FROM bailleurs b2 
-                INNER JOIN biens bien2 ON bien2.bailleur_id = b2.id 
-                WHERE b2.user_id = u.id
-            )
-        ");
+        $bailleurs = DB::table('users')
+            ->where('user_type', 'bailleur')
+            ->whereNull('agence_id')
+            ->get();
+
+        foreach ($bailleurs as $user) {
+            $bailleurId = DB::table('bailleurs')->where('user_id', $user->id)->value('id');
+
+            if ($bailleurId) {
+                $agenceId = DB::table('biens')
+                    ->where('bailleur_id', $bailleurId)
+                    ->whereNotNull('agence_id')
+                    ->value('agence_id');
+
+                if ($agenceId) {
+                    DB::table('users')
+                        ->where('id', $user->id)
+                        ->update(['agence_id' => $agenceId]);
+                }
+            }
+        }
     }
 
     /**

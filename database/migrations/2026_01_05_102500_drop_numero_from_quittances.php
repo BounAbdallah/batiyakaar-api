@@ -19,8 +19,16 @@ return new class extends Migration {
         // 2. Drop the numero column
         Schema::table('quittances', function (Blueprint $table) {
             if (Schema::hasColumn('quittances', 'numero')) {
-                // Drop index if exists? strict mode?
-                // Usually dropColumn handles it, but verify unique constraint.
+                // Drop index first for SQLite compatibility
+                try {
+                    $table->dropIndex(['numero']);
+                } catch (\Exception $e) {
+                }
+                try {
+                    $table->dropUnique(['numero']);
+                } catch (\Exception $e) {
+                }
+
                 $table->dropColumn('numero');
             }
         });

@@ -70,4 +70,37 @@ class WaveService
         Log::error('Wave API Error: ' . $response->body());
         throw new \Exception('Failed to create Wave checkout session: ' . $response->body());
     }
+    /**
+     * Create a payout to a specific number.
+     */
+    public function payout($amount, $currency = 'XOF', $recipientName, $recipientMobile)
+    {
+        $this->checkApiKey();
+
+        // Wave Payout API URL (Production)
+        // Usually: https://api.wave.com/v1/payouts
+        $url = $this->baseUrl . '/payouts';
+
+        $data = [
+            'amount' => (string) $amount,
+            'currency' => $currency,
+            'recipient_name' => $recipientName,
+            'mobile' => $recipientMobile,
+        ];
+
+        $response = Http::withHeaders([
+            'Authorization' => 'Bearer ' . $this->apiKey,
+            'Content-Type' => 'application/json',
+            'Idempotency-Key' => \Illuminate\Support\Str::uuid()->toString(), // Ensure idempotency
+        ])->post($url, $data);
+
+        if ($response->successful()) {
+            return $response->json();
+        }
+
+        Log::error('Wave Payout Error: ' . $response->body());
+        // We do not throw exception here to avoid breaking the webhook flow completely,
+        // but we return false/null to indicate failure.
+        return null;
+    }
 }

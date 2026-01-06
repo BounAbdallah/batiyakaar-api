@@ -13,7 +13,9 @@ return new class extends Migration {
     {
         // Using raw SQL because Schema builder doesn't support changing enum options easily across all drivers
         // and identifying the correct syntax for MySQL/MariaDB
-        DB::statement("ALTER TABLE biens MODIFY COLUMN type ENUM('appartement', 'maison', 'studio', 'commerce', 'villa', 'terrain', 'chambre') NOT NULL");
+        if (DB::connection()->getDriverName() !== 'sqlite') {
+            DB::statement("ALTER TABLE biens MODIFY COLUMN type ENUM('appartement', 'maison', 'studio', 'commerce', 'villa', 'terrain', 'chambre') NOT NULL");
+        }
     }
 
     /**
