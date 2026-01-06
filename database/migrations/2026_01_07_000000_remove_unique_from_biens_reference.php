@@ -11,12 +11,13 @@ return new class extends Migration {
     public function up(): void
     {
         Schema::table('biens', function (Blueprint $table) {
-            // Drop the unique constraint
-            // The index name is typically table_column_unique
-            $table->dropUnique('biens_reference_unique');
-
-            // Optionally add a non-unique index for performance
-            $table->index('reference');
+            // Drop the unique constraint only.
+            // Regular index 'biens_reference_index' already exists from creation migration.
+            try {
+                $table->dropUnique('biens_reference_unique');
+            } catch (\Exception $e) {
+                // If index already dropped in previous failed run, ignore.
+            }
         });
     }
 
@@ -26,8 +27,12 @@ return new class extends Migration {
     public function down(): void
     {
         Schema::table('biens', function (Blueprint $table) {
-            $table->dropIndex(['reference']);
-            $table->unique('reference');
+            // Restore unique constraint
+            // We use the standard name to match original state
+            try {
+                $table->unique('reference');
+            } catch (\Exception $e) {
+            }
         });
     }
 };
