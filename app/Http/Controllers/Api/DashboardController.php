@@ -94,8 +94,8 @@ class DashboardController extends Controller
 
         $stats['revenue_collected_month'] = $currentMonthPayments->where('statut', 'paye')->sum('montant');
 
-        // Expected Revenue (Sum of monthly rent of all active leases)
-        $stats['revenue_expected_month'] = Bail::where($field, $id)->where('statut', 'actif')->sum('loyer_mensuel');
+        // Expected Revenue (Sum of monthly rent of ALL properties, per user request)
+        $stats['revenue_expected_month'] = Bien::where($field, $id)->sum('loyer_mensuel');
 
         // 3. Charts Data
 
