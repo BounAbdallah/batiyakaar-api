@@ -92,11 +92,14 @@ class WaveService
         // Usually: https://api.wave.com/v1/payout
         $url = $this->baseUrl . '/payout';
 
+        // Sanitize mobile number (remove spaces)
+        $mobile = str_replace(' ', '', $recipientMobile);
+
         $data = [
-            'amount' => (string) $amount,
+            'receive_amount' => (string) $amount, // Changed from 'amount' to 'receive_amount'
             'currency' => $currency,
-            'recipient_name' => $recipientName,
-            'mobile' => $recipientMobile,
+            'mobile' => $mobile,
+            // 'recipient_name' removed as it caused "extra fields not permitted" error
         ];
 
         $response = Http::withHeaders([
