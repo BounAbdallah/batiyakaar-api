@@ -9,19 +9,30 @@ class WaveService
 {
     private $baseUrl;
     private $apiKey;
+    private $payoutKey;
 
     public function __construct()
     {
         $this->baseUrl = config('services.wave.base_url', 'https://api.wave.com/v1');
         $apiKey = config('services.wave.api_key');
-        // Ensure we don't pass null to trim if config is missing (though config returns null by default, trim(null) is deprecated)
+        $payoutKey = config('services.wave.payout_key');
+
+        // Ensure we don't pass null to trim
         $this->apiKey = $apiKey ? trim($apiKey) : null;
+        $this->payoutKey = $payoutKey ? trim($payoutKey) : $this->apiKey; // Fallback to main key if no specific payout key
     }
 
     private function checkApiKey()
     {
         if (empty($this->apiKey)) {
             throw new \Exception("Wave API Key is missing. Check WAVE_API_KEY in .env and run 'php artisan config:clear'");
+        }
+    }
+
+    private function checkPayoutKey()
+    {
+        if (empty($this->payoutKey)) {
+            throw new \Exception("Wave Payout Key is missing. Check WAVE_PAYOUT_KEY or WAVE_API_KEY in .env");
         }
     }
 
@@ -75,7 +86,7 @@ class WaveService
      */
     public function payout($amount, $currency = 'XOF', $recipientName, $recipientMobile)
     {
-        $this->checkApiKey();
+        $this->checkPayoutKey();
 
         // Wave Payout API URL (Production)
         // Usually: https://api.wave.com/v1/payout
@@ -89,7 +100,7 @@ class WaveService
         ];
 
         $response = Http::withHeaders([
-            'Authorization' => 'Bearer ' . $this->apiKey,
+            'Authorization' => 'Bearer ' . $this->payoutKey,
             'Content-Type' => 'application/json',
             'Idempotency-Key' => \Illuminate\Support\Str::uuid()->toString(), // Ensure idempotency
         ])->post($url, $data);

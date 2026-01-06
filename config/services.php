@@ -41,6 +41,7 @@ return [
 
     'wave' => [
         'api_key' => env('WAVE_API_KEY'),
+        'payout_key' => env('WAVE_PAYOUT_KEY'),
         'webhook_secret' => env('WAVE_WEBHOOK_SECRET'),
         'base_url' => env('WAVE_BASE_URL', 'https://api.wave.com/v1'),
     ],
