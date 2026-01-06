@@ -111,6 +111,26 @@ class ImmeubleController extends Controller
 
         $request->merge(['bailleur_id' => $bailleurId, 'agence_id' => $agenceId]);
 
+        // Enforce Subscription Limit on Immeubles (Buildings)
+        if ($user->user_type === 'agence') {
+            $agence = $user->agence;
+            $abonnement = $agence->abonnement()->actif()->first();
+
+            if ($abonnement) {
+                $plan = $abonnement->plan;
+                // Interpret 'limite_biens' as 'Limit of Buildings'
+                if ($plan && $plan->limite_biens > 0) {
+                    $currentImmeublesCount = $agence->immeubles()->count();
+                    if ($currentImmeublesCount >= $plan->limite_biens) {
+                        return response()->json([
+                            'message' => "La limite d'immeubles pour votre abonnement ({$plan->limite_biens}) a été atteinte. Veuillez passer au plan supérieur.",
+                            'limit_reached' => true
+                        ], 403);
+                    }
+                }
+            }
+        }
+
         $validated = $request->validate([
             'nom' => 'required|string|max:255',
             'adresse' => 'required|string|max:255',

@@ -134,7 +134,7 @@ class BienController extends Controller
         $validated = $request->validate([
             'bailleur_id' => 'required|exists:bailleurs,id',
             'agence_id' => 'nullable|exists:agences,id',
-            'immeuble_id' => 'nullable|exists:immeubles,id',
+            'immeuble_id' => 'required|exists:immeubles,id',
             'etage_id' => 'nullable|exists:etages,id',
             'projet_construction_id' => 'nullable|exists:projets_construction,id',
             'reference' => 'required|string',
@@ -164,36 +164,7 @@ class BienController extends Controller
 
         $validated['statut'] = 'disponible';
 
-        if ($user->user_type === 'agence') {
-            $agence = $user->agence;
-
-            // Check subscription
-            $abonnement = $agence->abonnement()->actif()->first();
-            if (!$abonnement) {
-                // If no active subscription, you might want to block or allow a free tier.
-                // For now, let's assume strict subscription requirement or check plans.
-                // Adapting logic: Check if a limit exists in a default plan or enforce subscription.
-                // Assuming strict enforcement based on user request:
-                // return response()->json(['message' => 'Aucun abonnement actif. Veuillez souscrire à un plan.'], 403);
-
-                // Relaxed logic for dev/demo if no plan: allow unlimited or default?
-                // Adhering to "Limit enforcement" -> assuming limits come from Plan.
-                // If no plan, maybe 0 limit?
-            }
-
-            if ($abonnement) {
-                $plan = $abonnement->plan;
-                if ($plan && $plan->limite_biens > 0) {
-                    $currentBiensCount = $agence->biens()->count();
-                    if ($currentBiensCount >= $plan->limite_biens) {
-                        return response()->json([
-                            'message' => "La limite de biens pour votre abonnement ({$plan->limite_biens}) a été atteinte. Veuillez passer au plan supérieur.",
-                            'limit_reached' => true
-                        ], 403);
-                    }
-                }
-            }
-        }
+        // Limit check removed (now on Immeuble)
 
         if (empty($validated['adresse']) && !empty($validated['immeuble_id'])) {
             $building = \App\Models\Immeuble::find($validated['immeuble_id']);
