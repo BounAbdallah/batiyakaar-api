@@ -244,10 +244,14 @@ class PaiementLoyerController extends Controller
         // Reste pour le bailleur
         $montant_bailleur = $montant - $montant_agence;
 
+        // Calcul montant plateforme (Net Profit)
+        // 1.5% frais client - 1.0% frais Wave Payout = 0.5% Marge
+        $montant_plateforme = $montant * 0.005;
+
         Ventilation::create([
             'paiement_loyer_id' => $paiement->id,
             'montant_agence' => $montant_agence,
-            'montant_plateforme' => 0,
+            'montant_plateforme' => $montant_plateforme,
             'montant_bailleur' => $montant_bailleur,
             'date_ventilation' => now(),
         ]);

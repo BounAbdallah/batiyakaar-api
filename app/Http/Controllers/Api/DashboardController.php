@@ -29,6 +29,8 @@ class DashboardController extends Controller
         } elseif ($user->user_type === 'locataire') {
             $locataireId = $user->locataire->id;
             $this->getTenantStats($stats, $locataireId);
+        } elseif ($user->user_type === 'admin' || $user->hasRole('admin')) {
+            $this->getAdminStats($stats);
         }
 
         return response()->json([
@@ -276,6 +278,44 @@ class DashboardController extends Controller
                     ];
                 });
         }
+    }
+
+    private function getAdminStats(&$stats)
+    {
+        // Global Counts
+        $stats['properties_count'] = Bien::count();
+        $stats['active_leases_count'] = Bail::where('statut', 'actif')->count();
+        $stats['users_count'] = \App\Models\User::count();
+        $stats['incidents_pending_count'] = Incident::whereIn('statut', ['ouvert', 'en_cours'])->count();
+
+        // Financials (Platform Wallet)
+        // Total commissions earned by platform (Net Profit)
+        $stats['platform_wallet_balance'] = Ventilation::sum('montant_plateforme');
+        $stats['platform_revenue_month'] = Ventilation::whereMonth('created_at', now()->month)
+            ->whereYear('created_at', now()->year)
+            ->sum('montant_plateforme');
+
+        // Recent Earnings (Commissions)
+        $stats['recent_earnings'] = Ventilation::where('montant_plateforme', '>', 0)
+            ->with(['paiementLoyer.bail.agence', 'paiementLoyer.bail.bien'])
+            ->latest('created_at')
+            ->take(10)
+            ->get()
+            ->map(function ($v) {
+                return [
+                    'amount' => $v->montant_plateforme,
+                    'source' => 'Commission sur Loyer',
+                    'date' => $v->created_at,
+                    'details' => $v->paiementLoyer->bail->bien->reference ?? 'Bien inconnu',
+                    'agence' => $v->paiementLoyer->bail->agence->raison_sociale ?? 'N/A'
+                ];
+            });
+
+        // Other Global Financials
+        $stats['total_rent_collected_month'] = PaiementLoyer::whereMonth('date_paiement', now()->month)
+            ->whereYear('date_paiement', now()->year)
+            ->where('statut', 'paye')
+            ->sum('montant');
     }
 
     public function sidebarCounts(Request $request)
