@@ -10,15 +10,14 @@ return new class extends Migration {
      */
     public function up(): void
     {
-        Schema::table('biens', function (Blueprint $table) {
-            // Drop the unique constraint only.
-            // Regular index 'biens_reference_index' already exists from creation migration.
-            try {
+        try {
+            Schema::table('biens', function (Blueprint $table) {
+                // Drop the unique constraint only.
                 $table->dropUnique('biens_reference_unique');
-            } catch (\Exception $e) {
-                // If index already dropped in previous failed run, ignore.
-            }
-        });
+            });
+        } catch (\Exception $e) {
+            // If index already dropped in previous failed run, ignore.
+        }
     }
 
     /**
