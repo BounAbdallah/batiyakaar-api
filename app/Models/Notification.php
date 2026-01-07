@@ -29,6 +29,7 @@ class Notification extends Model
             'date_envoi' => 'datetime',
             'lue' => 'boolean',
             'metadata' => 'array',
+            'data' => 'array',
         ];
     }
 
