@@ -296,33 +296,34 @@ class DashboardController extends Controller
             ->sum('montant_plateforme');
 
         // Recent Earnings (Commissions)
-    $stats['recent_earnings'] = Ventilation::where('montant_plateforme', '>', 0)
-        ->with(['paiementLoyer.bail.agence', 'paiementLoyer.bail.bien', 'paiementLoyer.bail.locataire.user'])
-        ->latest('created_at')
-        ->take(10)
-        ->get()
-        ->map(function ($v) {
-            $paiement = $v->paiementLoyer;
-            $bail = $paiement->bail;
-            $client = $bail->locataire->user;
+        $stats['recent_earnings'] = Ventilation::where('montant_plateforme', '>', 0)
+            ->with(['paiementLoyer.bail.agence', 'paiementLoyer.bail.bien', 'paiementLoyer.bail.locataire.user'])
+            ->latest('created_at')
+            ->take(10)
+            ->get()
+            ->map(function ($v) {
+                $paiement = $v->paiementLoyer;
+                $bail = $paiement->bail;
+                $client = $bail->locataire->user;
 
-            return [
-                'id' => $v->id, // Add ID for key
-                'amount' => $v->montant_plateforme,
-                'source' => 'Commission sur Loyer',
-                'date' => $v->created_at,
-                'property' => $bail->bien->reference ?? 'Bien inconnu', // Renamed from details to property for clarity
-                'agence' => $bail->agence->raison_sociale ?? 'N/A',
-                'transaction_ref' => $paiement->reference_transaction ?? 'N/A',
-                'client' => $client ? ($client->prenom . ' ' . $client->nom) : 'Inconnu',
-                'mode' => $paiement->mode_paiement ?? 'N/A'
-            ];
-        });
+                return [
+                    'id' => $v->id, // Add ID for key
+                    'amount' => $v->montant_plateforme,
+                    'source' => 'Commission sur Loyer',
+                    'date' => $v->created_at,
+                    'property' => $bail->bien->reference ?? 'Bien inconnu', // Renamed from details to property for clarity
+                    'agence' => $bail->agence->raison_sociale ?? 'N/A',
+                    'transaction_ref' => $paiement->reference_transaction ?? 'N/A',
+                    'client' => $client ? ($client->prenom . ' ' . $client->nom) : 'Inconnu',
+                    'mode' => $paiement->mode_paiement ?? 'N/A'
+                ];
+            });
 
         // Other Global Financials
         $stats['total_rent_collected_month'] = PaiementLoyer::whereMonth('date_paiement', now()->month)
             ->whereYear('date_paiement', now()->year)
             ->where('statut', 'paye')
+            ->sum('montant');
     }
 
     public function sidebarCounts(Request $request)
