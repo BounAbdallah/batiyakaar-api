@@ -57,6 +57,8 @@ class AdminController extends Controller
                 'total' => Agence::count(),
                 'active_subscriptions' => Abonnement::where('statut', 'actif')->count(),
             ],
+            'revenue' => [
+                // Simplified calculation based on active subscriptions * price
                 // Ideally this should use a real Transaction model for subscriptions
                 'current_mrr' => Abonnement::where('statut', 'actif')
                     ->join('plans', 'abonnements.plan_id', '=', 'plans.id')
@@ -82,7 +84,7 @@ class AdminController extends Controller
                         'amount' => $v->montant_plateforme,
                         'source' => 'Commission sur Loyer',
                         'date' => $v->created_at,
-                        'property' => $bail?->bien?->reference ?? 'Bien inconnu', 
+                        'property' => $bail?->bien?->reference ?? 'Bien inconnu',
                         'agence' => $bail?->agence?->raison_sociale ?? 'N/A',
                         'transaction_ref' => $paiement?->reference_transaction ?? 'N/A',
                         'client' => $client ? ($client->prenom . ' ' . $client->nom) : 'Inconnu',
