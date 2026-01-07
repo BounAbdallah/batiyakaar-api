@@ -13,6 +13,7 @@ use App\Models\Bailleur;
 use App\Models\PaiementLoyer;
 use App\Models\Incident;
 use App\Models\Plan;
+use App\Models\Ventilation;
 
 class AdminController extends Controller
 {
@@ -56,13 +57,38 @@ class AdminController extends Controller
                 'total' => Agence::count(),
                 'active_subscriptions' => Abonnement::where('statut', 'actif')->count(),
             ],
-            'revenue' => [
-                // Simplified calculation based on active subscriptions * price
                 // Ideally this should use a real Transaction model for subscriptions
                 'current_mrr' => Abonnement::where('statut', 'actif')
                     ->join('plans', 'abonnements.plan_id', '=', 'plans.id')
                     ->sum('plans.prix_mensuel')
-            ]
+            ],
+            // Platform Commissions
+            'platform_wallet_balance' => Ventilation::sum('montant_plateforme'),
+            'platform_revenue_month' => Ventilation::whereMonth('created_at', now()->month)
+                ->whereYear('created_at', now()->year)
+                ->sum('montant_plateforme'),
+            'recent_earnings' => Ventilation::where('montant_plateforme', '>', 0)
+                ->with(['paiementLoyer.bail.agence', 'paiementLoyer.bail.bien', 'paiementLoyer.bail.locataire.user'])
+                ->latest('created_at')
+                ->take(10)
+                ->get()
+                ->map(function ($v) {
+                    $paiement = $v->paiementLoyer;
+                    $bail = $paiement?->bail;
+                    $client = $bail?->locataire?->user;
+
+                    return [
+                        'id' => $v->id, // Add ID for key
+                        'amount' => $v->montant_plateforme,
+                        'source' => 'Commission sur Loyer',
+                        'date' => $v->created_at,
+                        'property' => $bail?->bien?->reference ?? 'Bien inconnu', 
+                        'agence' => $bail?->agence?->raison_sociale ?? 'N/A',
+                        'transaction_ref' => $paiement?->reference_transaction ?? 'N/A',
+                        'client' => $client ? ($client->prenom . ' ' . $client->nom) : 'Inconnu',
+                        'mode' => $paiement?->mode_paiement ?? 'N/A'
+                    ];
+                })
         ];
 
         return response()->json([
