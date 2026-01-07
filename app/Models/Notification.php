@@ -17,6 +17,10 @@ class Notification extends Model
         'date_envoi',
         'lue',
         'metadata',
+        'notifiable_type',
+        'notifiable_id',
+        'data',
+        'read_at',
     ];
 
     protected function casts(): array
