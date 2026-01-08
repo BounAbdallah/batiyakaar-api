@@ -46,7 +46,14 @@ class ImmeubleController extends Controller
             }
         ]);
 
-        $immeubles = $query->with('etages')->latest()->paginate(15);
+        // Pagination or fetch all
+        if ($request->has('all') && $request->all === 'true') {
+            // Fetch all records without pagination (useful for stats)
+            $immeubles = $query->with('etages')->latest()->get();
+        } else {
+            // Default pagination
+            $immeubles = $query->with('etages')->latest()->paginate(15);
+        }
 
         // Calculate totals for dashboard stats
         $totalBiens = 0;

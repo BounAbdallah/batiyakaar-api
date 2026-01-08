@@ -67,8 +67,14 @@ class BienController extends Controller
         // Include relationships
         $query->with(['bailleur.user', 'agence.user', 'projetConstruction']);
 
-        // Pagination
-        $biens = $query->latest()->paginate(15);
+        // Pagination or fetch all
+        if ($request->has('all') && $request->all === 'true') {
+            // Fetch all records without pagination (useful for dropdowns/selects)
+            $biens = $query->latest()->get();
+        } else {
+            // Default pagination
+            $biens = $query->latest()->paginate(15);
+        }
 
         return response()->json([
             'success' => true,
