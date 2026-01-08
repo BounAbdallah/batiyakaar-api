@@ -301,11 +301,20 @@ class PaiementLoyerController extends Controller
             $pdfPath = $tempDir . '/quittance_' . $quittance->id . '_' . time() . '.pdf';
             $pdf->save($pdfPath);
 
-            // Send email to tenant
+            // Send email to tenant if email exists, otherwise fallback to Agency
             if ($paiement->bail->locataire && $paiement->bail->locataire->user && $paiement->bail->locataire->user->email) {
                 \Illuminate\Support\Facades\Mail::to($paiement->bail->locataire->user)->send(
                     new \App\Mail\ReceiptCreated($quittance, $paiement->bail->locataire->user, $pdfPath)
                 );
+            } elseif ($paiement->bail->agence) {
+                // Fallback: Send to Agency if tenant has no email
+                // We send it to the Agency User (owner or manager)
+                $agenceUser = $paiement->bail->agence->user; // Assuming Agence belongsTo User
+                if ($agenceUser && $agenceUser->email) {
+                    \Illuminate\Support\Facades\Mail::to($agenceUser)->send(
+                        new \App\Mail\ReceiptCreated($quittance, $paiement->bail->locataire->user, $pdfPath)
+                    );
+                }
             }
 
             // Delete temporary PDF

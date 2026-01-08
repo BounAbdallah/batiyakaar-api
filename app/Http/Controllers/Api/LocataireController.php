@@ -79,7 +79,7 @@ class LocataireController extends Controller
         $user = \App\Models\User::create([
             'prenom' => $validated['prenom'],
             'nom' => $validated['nom'],
-            'email' => $validated['email'],
+            'email' => $validated['email'] ?? null,
             'telephone' => $validated['telephone'],
             'password' => \Illuminate\Support\Facades\Hash::make($password),
             'user_type' => 'locataire',
