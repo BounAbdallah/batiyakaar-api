@@ -35,6 +35,7 @@ Route::prefix('v1')->group(function () {
     Route::get('/baux/{id}/dette/view', [BailController::class, 'viewDebtForBail']);
     Route::get('/baux/{id}/demande/view', [BailController::class, 'viewDemandLetter']);
     Route::get('/paiements-loyer/{id}/dette/view', [PaiementLoyerController::class, 'viewDebtAcknowledgment']);
+    Route::get('/immeubles/{id}/mandat/view', [\App\Http\Controllers\Api\ImmeubleController::class, 'viewMandat']);
 
     // Wave Webhook (Public)
     Route::post('/webhooks/wave', [PaiementLoyerController::class, 'handleWebhook']);
@@ -139,7 +140,6 @@ Route::prefix('v1')->group(function () {
         Route::delete('/bailleurs/{id}', [\App\Http\Controllers\Api\BailleurController::class, 'destroy'])->middleware('permission:bailleurs.delete');
 
         // Immeubles
-        Route::get('/immeubles/{id}/mandat/view', [\App\Http\Controllers\Api\ImmeubleController::class, 'viewMandat'])->middleware('permission:immeubles.view');
         Route::get('/immeubles/{id}/mandat/download', [\App\Http\Controllers\Api\ImmeubleController::class, 'downloadMandat'])->middleware('permission:immeubles.view');
         Route::get('/immeubles', [\App\Http\Controllers\Api\ImmeubleController::class, 'index'])->middleware('permission:immeubles.view');
         Route::post('/immeubles', [\App\Http\Controllers\Api\ImmeubleController::class, 'store'])->middleware('permission:immeubles.create');

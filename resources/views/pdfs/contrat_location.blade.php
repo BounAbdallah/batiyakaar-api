@@ -183,6 +183,17 @@
                 À DURÉE INDÉTERMINÉE
             @endif
         </h1>
+        @if($bail->statut === 'resilie')
+            <div
+                style="color: #dc2626; text-align: center; font-size: 14pt; font-weight: bold; margin-top: 10px; border: 2px solid #dc2626; padding: 5px; display: inline-block;">
+                CONTRAT RÉSILIÉ
+            </div>
+        @elseif($bail->statut === 'expire')
+            <div
+                style="color: #dc2626; text-align: center; font-size: 14pt; font-weight: bold; margin-top: 10px; border: 2px solid #dc2626; padding: 5px; display: inline-block;">
+                CONTRAT EXPIRÉ
+            </div>
+        @endif
     </div>
 
     {{-- Parties --}}
@@ -206,7 +217,8 @@
         <p>
             <strong>Et monsieur/madame {{ $bail->locataire->user->prenom }} {{ $bail->locataire->user->nom }}</strong>
             @if($bail->locataire->user->date_naissance)
-                né(e) le {{ \Carbon\Carbon::parse($bail->locataire->user->date_naissance)->locale('fr')->isoFormat('DD MMMM YYYY') }}
+                né(e) le
+                {{ \Carbon\Carbon::parse($bail->locataire->user->date_naissance)->locale('fr')->isoFormat('DD MMMM YYYY') }}
                 @if($bail->locataire->user->lieu_naissance)
                     à {{ $bail->locataire->user->lieu_naissance }}
                 @endif

@@ -340,9 +340,19 @@ class ImmeubleController extends Controller
         return $pdf->download('mandat_gerance_immeuble_' . $immeuble->nom . '.pdf');
     }
 
-    public function viewMandat($id)
+    public function viewMandat(\Illuminate\Http\Request $request, $id)
     {
+        // Authenticate via token from query if present
+        if ($token = $request->query('token')) {
+            $user = \Laravel\Sanctum\PersonalAccessToken::findToken($token)?->tokenable;
+            if ($user) {
+                \Illuminate\Support\Facades\Auth::setUser($user);
+            }
+        }
+
         $immeuble = Immeuble::with(['bailleur.user', 'agence', 'agence.user', 'etages.biens'])->findOrFail($id);
+
+        // Use the authenticated user (from token) for check
         $this->checkOwnership(request()->user(), $immeuble);
 
         $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdfs.mandat_gerance_immeuble', compact('immeuble'));
