@@ -17,10 +17,11 @@ class NoteDepenseController extends Controller
     public function index(Request $request)
     {
         $user = Auth::user();
+        $agenceId = $user->agence ? $user->agence->id : $user->agence_id;
         $query = NoteDepense::with(['bailleur.user', 'immeuble', 'depenses']);
 
-        if ($user->agence_id) {
-            $query->where('agence_id', $user->agence_id);
+        if ($agenceId) {
+            $query->where('agence_id', $agenceId);
         }
 
         if ($request->has('bailleur_id')) {
@@ -68,11 +69,13 @@ class NoteDepenseController extends Controller
 
         $user = Auth::user();
         $bailleur = Bailleur::with('user')->find($request->bailleur_id);
-        $agence_id = $bailleur->user->agence_id;
+        $bailleurAgenceId = $bailleur->user ? ($bailleur->user->agence ? $bailleur->user->agence->id : $bailleur->user->agence_id) : null;
 
-        if (!$agence_id) {
+        if (!$bailleurAgenceId) {
             return response()->json(['success' => false, 'message' => 'Ce bailleur n\'est pas associé à une agence.'], 400);
         }
+        
+        $agence_id = $bailleurAgenceId;
 
         try {
             return DB::transaction(function () use ($request, $agence_id) {
@@ -115,13 +118,14 @@ class NoteDepenseController extends Controller
     public function show($id)
     {
         $user = Auth::user();
+        $agenceId = $user->agence ? $user->agence->id : $user->agence_id;
         $note = NoteDepense::with(['bailleur.user', 'immeuble', 'depenses', 'agence'])->find($id);
 
         if (!$note) {
             return response()->json(['success' => false, 'message' => 'Note non trouvée'], 404);
         }
 
-        if ($user->agence_id && $note->agence_id !== $user->agence_id) {
+        if ($agenceId && $note->agence_id !== $agenceId) {
             return response()->json(['success' => false, 'message' => 'Non autorisé'], 403);
         }
 
@@ -134,13 +138,14 @@ class NoteDepenseController extends Controller
     public function generatePDF($id)
     {
         $user = Auth::user();
+        $agenceId = $user->agence ? $user->agence->id : $user->agence_id;
         $note = NoteDepense::with(['bailleur.user', 'immeuble', 'depenses', 'agence'])->find($id);
 
         if (!$note) {
             return response()->json(['success' => false, 'message' => 'Note non trouvée'], 404);
         }
 
-        if ($user->agence_id && $note->agence_id !== $user->agence_id) {
+        if ($agenceId && $note->agence_id !== $agenceId) {
             return response()->json(['success' => false, 'message' => 'Non autorisé'], 403);
         }
 
@@ -151,13 +156,14 @@ class NoteDepenseController extends Controller
     public function update(Request $request, $id)
     {
         $user = Auth::user();
+        $agenceId = $user->agence ? $user->agence->id : $user->agence_id;
         $note = NoteDepense::find($id);
 
         if (!$note) {
             return response()->json(['success' => false, 'message' => 'Note non trouvée'], 404);
         }
 
-        if ($user->agence_id && $note->agence_id !== $user->agence_id) {
+        if ($agenceId && $note->agence_id !== $agenceId) {
             return response()->json(['success' => false, 'message' => 'Non autorisé'], 403);
         }
 
@@ -214,13 +220,14 @@ class NoteDepenseController extends Controller
     public function destroy($id)
     {
         $user = Auth::user();
+        $agenceId = $user->agence ? $user->agence->id : $user->agence_id;
         $note = NoteDepense::find($id);
 
         if (!$note) {
             return response()->json(['success' => false, 'message' => 'Note non trouvée'], 404);
         }
 
-        if ($user->agence_id && $note->agence_id !== $user->agence_id) {
+        if ($agenceId && $note->agence_id !== $agenceId) {
             return response()->json(['success' => false, 'message' => 'Non autorisé'], 403);
         }
 
@@ -244,8 +251,11 @@ class NoteDepenseController extends Controller
         ]);
 
         $bailleur = Bailleur::with('user')->find($request->bailleur_id);
+        
+        $userAgenceId = $user->agence ? $user->agence->id : $user->agence_id;
+        $bailleurAgenceId = $bailleur->user ? ($bailleur->user->agence ? $bailleur->user->agence->id : $bailleur->user->agence_id) : null;
 
-        if ($user->agence_id && $bailleur->user->agence_id !== $user->agence_id) {
+        if ($userAgenceId && $bailleurAgenceId !== $userAgenceId) {
             return response()->json(['success' => false, 'message' => 'Non autorisé'], 403);
         }
 

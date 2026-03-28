@@ -19,6 +19,7 @@ class DepenseController extends Controller
     public function generatePDF(string $id)
     {
         $user = Auth::user();
+        $agenceId = $user->agence ? $user->agence->id : $user->agence_id;
         $depense = Depense::with(['bailleur.user', 'immeuble', 'bien', 'agence'])->find($id);
 
         if (!$depense) {
@@ -26,7 +27,7 @@ class DepenseController extends Controller
         }
 
         // Security check
-        if ($user->agence_id && $depense->agence_id !== $user->agence_id) {
+        if ($agenceId && $depense->agence_id !== $agenceId) {
             return response()->json(['success' => false, 'message' => 'Non autorisé'], 403);
         }
 
@@ -44,11 +45,12 @@ class DepenseController extends Controller
     public function index(Request $request)
     {
         $user = Auth::user();
+        $agenceId = $user->agence ? $user->agence->id : $user->agence_id;
         $query = Depense::query();
 
         // Filter by Agency (if user belongs to one)
-        if ($user->agence_id) {
-            $query->where('agence_id', $user->agence_id);
+        if ($agenceId) {
+            $query->where('agence_id', $agenceId);
         }
 
         // Filters
@@ -109,14 +111,16 @@ class DepenseController extends Controller
             return response()->json(['success' => false, 'message' => 'Bailleur non trouvé'], 404);
         }
 
-        if (!$bailleur->user || !$bailleur->user->agence_id) {
+        $bailleurAgenceId = $bailleur->user ? ($bailleur->user->agence ? $bailleur->user->agence->id : $bailleur->user->agence_id) : null;
+
+        if (!$bailleurAgenceId) {
             return response()->json([
                 'success' => false,
                 'message' => 'Ce bailleur doit être associé à une agence avant de pouvoir enregistrer des dépenses'
             ], 400);
         }
 
-        $agence_id = $bailleur->user->agence_id;
+        $agence_id = $bailleurAgenceId;
 
         $data = $request->all();
         $data['agence_id'] = $agence_id;
@@ -141,6 +145,7 @@ class DepenseController extends Controller
     public function show(string $id)
     {
         $user = Auth::user();
+        $agenceId = $user->agence ? $user->agence->id : $user->agence_id;
         $depense = Depense::with(['bailleur.user', 'immeuble', 'bien'])->find($id);
 
         if (!$depense) {
@@ -148,7 +153,7 @@ class DepenseController extends Controller
         }
 
         // Security check
-        if ($user->agence_id && $depense->agence_id !== $user->agence_id) {
+        if ($agenceId && $depense->agence_id !== $agenceId) {
             return response()->json(['success' => false, 'message' => 'Non autorisé'], 403);
         }
 
@@ -164,13 +169,14 @@ class DepenseController extends Controller
     public function update(Request $request, string $id)
     {
         $user = Auth::user();
+        $agenceId = $user->agence ? $user->agence->id : $user->agence_id;
         $depense = Depense::find($id);
 
         if (!$depense) {
             return response()->json(['success' => false, 'message' => 'Dépense non trouvée'], 404);
         }
 
-        if ($user->agence_id && $depense->agence_id !== $user->agence_id) {
+        if ($agenceId && $depense->agence_id !== $agenceId) {
             return response()->json(['success' => false, 'message' => 'Non autorisé'], 403);
         }
 
@@ -216,13 +222,14 @@ class DepenseController extends Controller
     public function destroy(string $id)
     {
         $user = Auth::user();
+        $agenceId = $user->agence ? $user->agence->id : $user->agence_id;
         $depense = Depense::find($id);
 
         if (!$depense) {
             return response()->json(['success' => false, 'message' => 'Dépense non trouvée'], 404);
         }
 
-        if ($user->agence_id && $depense->agence_id !== $user->agence_id) {
+        if ($agenceId && $depense->agence_id !== $agenceId) {
             return response()->json(['success' => false, 'message' => 'Non autorisé'], 403);
         }
 
