@@ -180,21 +180,25 @@ class AuthController extends Controller
     public function login(Request $request)
     {
         $request->validate([
-            'email' => 'required|email',
+            'login' => 'required|string',
             'password' => 'required',
         ]);
 
-        $user = User::where('email', $request->email)->first();
+        $login = $request->login;
+        $user = User::where(function ($query) use ($login) {
+            $query->where('email', $login)
+                  ->orWhere('telephone', $login);
+        })->first();
 
         if (!$user || !Hash::check($request->password, $user->password)) {
             throw ValidationException::withMessages([
-                'email' => ['Les identifiants fournis sont incorrects.'],
+                'login' => ['Les identifiants fournis sont incorrects.'],
             ]);
         }
 
         if (!$user->actif) {
             throw ValidationException::withMessages([
-                'email' => ['Votre compte est désactivé.'],
+                'login' => ['Votre compte est désactivé.'],
             ]);
         }
 
@@ -218,7 +222,7 @@ class AuthController extends Controller
 
                 if (!$canAccess) {
                     throw ValidationException::withMessages([
-                        'email' => ['L\'abonnement de votre agence ne permet pas votre accès.'],
+                        'login' => ['L\'abonnement de votre agence ne permet pas votre accès.'],
                     ]);
                 }
             }
