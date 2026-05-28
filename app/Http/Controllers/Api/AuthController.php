@@ -11,7 +11,11 @@ use App\Models\Locataire;
 use App\Models\PortefeuilleVirtuel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use Carbon\Carbon;
 
 class AuthController extends Controller
 {
@@ -275,6 +279,117 @@ class AuthController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Déconnexion réussie',
+        ]);
+    }
+
+    /**
+     * Send password reset link
+     */
+    public function forgotPassword(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email',
+        ]);
+
+        $user = User::where('email', $request->email)->first();
+
+        // Always return success to avoid email enumeration
+        if (!$user) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Si un compte existe avec cet email, vous recevrez un lien de réinitialisation.',
+            ]);
+        }
+
+        // Delete any existing token for this email
+        DB::table('password_reset_tokens')->where('email', $request->email)->delete();
+
+        // Generate a secure token
+        $token = Str::random(64);
+
+        DB::table('password_reset_tokens')->insert([
+            'email'      => $request->email,
+            'token'      => Hash::make($token),
+            'created_at' => Carbon::now(),
+        ]);
+
+        $frontendUrl = config('app.frontend_url', env('FRONTEND_URL', 'http://localhost:5173'));
+        $resetUrl = $frontendUrl . '/reset-password?token=' . $token . '&email=' . urlencode($request->email);
+
+        try {
+            Mail::send('emails.password-reset', ['user' => $user, 'resetUrl' => $resetUrl], function ($message) use ($user) {
+                $message->to($user->email, $user->prenom . ' ' . $user->nom)
+                    ->subject('Réinitialisation de votre mot de passe - Noor Immo');
+            });
+        } catch (\Exception $e) {
+            \Log::error('Failed to send password reset email: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors de l\'envoi de l\'email. Veuillez réessayer.',
+            ], 500);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Si un compte existe avec cet email, vous recevrez un lien de réinitialisation.',
+        ]);
+    }
+
+    /**
+     * Reset password using token
+     */
+    public function resetPassword(Request $request)
+    {
+        $request->validate([
+            'email'                 => 'required|email',
+            'token'                 => 'required|string',
+            'password'              => 'required|string|min:8|confirmed',
+        ]);
+
+        $record = DB::table('password_reset_tokens')
+            ->where('email', $request->email)
+            ->first();
+
+        if (!$record) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Ce lien de réinitialisation est invalide ou a expiré.',
+            ], 422);
+        }
+
+        // Check token validity (60 minutes)
+        if (Carbon::parse($record->created_at)->addMinutes(60)->isPast()) {
+            DB::table('password_reset_tokens')->where('email', $request->email)->delete();
+            return response()->json([
+                'success' => false,
+                'message' => 'Ce lien de réinitialisation a expiré. Veuillez en demander un nouveau.',
+            ], 422);
+        }
+
+        if (!Hash::check($request->token, $record->token)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Ce lien de réinitialisation est invalide.',
+            ], 422);
+        }
+
+        $user = User::where('email', $request->email)->first();
+
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Aucun compte trouvé avec cet email.',
+            ], 404);
+        }
+
+        $user->update(['password' => Hash::make($request->password)]);
+        $user->tokens()->delete();
+
+        DB::table('password_reset_tokens')->where('email', $request->email)->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Votre mot de passe a été réinitialisé avec succès. Vous pouvez maintenant vous connecter.',
         ]);
     }
 }
