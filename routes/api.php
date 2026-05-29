@@ -15,6 +15,7 @@ use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\AgenceController;
 use App\Http\Controllers\Api\TeamController;
 use App\Http\Controllers\Api\AdminController;
+use App\Http\Controllers\Api\AnalyticsController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -30,6 +31,9 @@ Route::prefix('v1')->group(function () {
     Route::post('/auth/login', [AuthController::class, 'login']);
     Route::post('/auth/forgot-password', [AuthController::class, 'forgotPassword']);
     Route::post('/auth/reset-password', [AuthController::class, 'resetPassword']);
+
+    // Analytics (public, no auth required)
+    Route::post('/analytics/visit', [AnalyticsController::class, 'logVisit']);
 
     // Public PDF view routes (with manual token auth)
     Route::get('/biens/{id}/mandat/view', [BienController::class, 'viewMandat']);
