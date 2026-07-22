@@ -265,7 +265,10 @@ class PaiementLoyerController extends Controller
 
         Quittance::create([
             'paiement_loyer_id' => $paiement->id,
-            'numero' => $numero,
+            'numero_quittance' => $numero,
+            'periode_debut' => $paiement->periode_debut,
+            'periode_fin' => $paiement->periode_fin,
+            'montant' => $paiement->montant,
             'date_emission' => now(),
             'url_pdf' => null, // À générer plus tard
         ]);

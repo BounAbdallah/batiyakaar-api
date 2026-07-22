@@ -145,6 +145,10 @@ Route::prefix('v1')->group(function () {
         Route::apiResource('produits', ProduitController::class);
         Route::put('/produits/{id}/stock', [ProduitController::class, 'updateStock']);
 
+        // Note Dépenses
+        Route::get('/note-depenses/{id}/pdf', [App\Http\Controllers\Api\NoteDepenseController::class, 'downloadPDF']);
+        Route::apiResource('note-depenses', App\Http\Controllers\Api\NoteDepenseController::class);
+
         // Commandes
         Route::apiResource('commandes', CommandeController::class);
 

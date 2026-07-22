@@ -51,7 +51,7 @@ class SubscriptionController extends Controller
         $abonnement->plan_id = $plan->id;
         $abonnement->date_debut = Carbon::now()->format('Y-m-d');
         $abonnement->date_fin = Carbon::now()->addMonths($request->duree_mois)->format('Y-m-d');
-        $abonnement->statut = 'en_attente'; // Pending activation
+        $abonnement->statut = 'en_attente'; 
         $abonnement->auto_renouvellement = true;
         $abonnement->save();
 

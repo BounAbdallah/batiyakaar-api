@@ -9,12 +9,7 @@ class Quittance extends Model
 {
     use HasFactory;
 
-    protected $fillable = [
-        'paiement_loyer_id',
-        'numero',
-        'date_emission',
-        'url_pdf',
-    ];
+    protected $guarded = [];
 
     protected function casts(): array
     {
