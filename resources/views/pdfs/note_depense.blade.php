@@ -34,7 +34,13 @@
                 </td>
                 <td style="width: 50%; text-align: right;">
                     <strong>Bailleur:</strong> {{ $note->bailleur->user->nom ?? '' }} {{ $note->bailleur->user->prenom ?? '' }}<br>
-                    <strong>Immeuble:</strong> {{ $note->immeuble->nom ?? 'Tous' }}
+                    @if($note->immeuble)
+                        <strong>Immeuble:</strong> {{ $note->immeuble->nom }}
+                    @elseif($note->bien)
+                        <strong>Bien:</strong> {{ $note->bien->reference }}
+                    @else
+                        <strong>Global</strong>
+                    @endif
                 </td>
             </tr>
         </table>
