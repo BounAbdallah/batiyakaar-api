@@ -17,7 +17,7 @@ class BailleurController extends Controller
     public function index(Request $request)
     {
         $user = \Illuminate\Support\Facades\Auth::user();
-        $query = Bailleur::with('user');
+        $query = Bailleur::with('user')->whereHas('user');
 
         // If Agency, only show Bailleurs who have properties managed by this agency
         if ($user->user_type === 'agence') {
