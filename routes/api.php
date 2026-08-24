@@ -149,6 +149,7 @@ Route::prefix('v1')->group(function () {
         Route::get('/note-depenses/{id}/pdf', [App\Http\Controllers\Api\NoteDepenseController::class, 'downloadPDF']);
         Route::apiResource('note-depenses', App\Http\Controllers\Api\NoteDepenseController::class);
         Route::get('/reports/periodic-expenses', [App\Http\Controllers\Api\ReportController::class, 'periodicExpenses']);
+        Route::get('/reports/bailleurs-with-expenses', [App\Http\Controllers\Api\ReportController::class, 'bailleursWithExpenses']);
 
         // Commandes
         Route::apiResource('commandes', CommandeController::class);

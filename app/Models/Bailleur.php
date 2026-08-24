@@ -45,4 +45,9 @@ class Bailleur extends Model
     {
         return $this->hasMany(Commande::class);
     }
+
+    public function noteDepenses()
+    {
+        return $this->hasMany(NoteDepense::class);
+    }
 }

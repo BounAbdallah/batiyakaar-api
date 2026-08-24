@@ -10,6 +10,33 @@ use Illuminate\Support\Facades\Auth;
 
 class ReportController extends Controller
 {
+    public function bailleursWithExpenses(Request $request)
+    {
+        $authUser = \Illuminate\Support\Facades\Auth::user();
+
+        $query = \App\Models\Bailleur::with(['user' => fn($q) => $q->withTrashed()])
+            ->whereHas('noteDepenses')
+            ->whereHas('noteDepenses', function ($q) use ($authUser) {
+                if ($authUser->agence_id || ($authUser->agence && $authUser->agence->id)) {
+                    $agenceId = $authUser->agence ? $authUser->agence->id : $authUser->agence_id;
+                    $q->where('agence_id', $agenceId);
+                }
+            });
+
+        $bailleurs = $query->get()->map(function ($b) {
+            return [
+                'id'   => $b->id,
+                'user' => $b->user ? [
+                    'nom'    => $b->user->nom,
+                    'prenom' => $b->user->prenom,
+                    'email'  => $b->user->email,
+                ] : null,
+            ];
+        })->filter(fn($b) => $b['user'])->values();
+
+        return response()->json(['success' => true, 'data' => $bailleurs]);
+    }
+
     public function periodicExpenses(Request $request)
     {
         $request->validate([
