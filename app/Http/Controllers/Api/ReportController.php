@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Bailleur;
 use App\Models\NoteDepense;
-use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -25,15 +24,13 @@ class ReportController extends Controller
         $bailleur   = Bailleur::with('user')->findOrFail($request->bailleur_id);
         $agence     = $authUser->agence;
 
-        $startDate  = Carbon::createFromDate($request->start_year, $request->start_month, 1)->startOfMonth();
-        $endDate    = Carbon::createFromDate($request->end_year,   $request->end_month,   1)->endOfMonth();
+        $startPeriod = (int)$request->start_year * 100 + (int)$request->start_month;
+        $endPeriod   = (int)$request->end_year   * 100 + (int)$request->end_month;
 
         $notes = NoteDepense::with(['depenses', 'immeuble', 'bien'])
             ->where('bailleur_id', $request->bailleur_id)
-            ->where(function ($q) use ($startDate, $endDate) {
-                $q->whereRaw("STR_TO_DATE(CONCAT(annee, '-', LPAD(mois, 2, '0'), '-01'), '%Y-%m-%d') >= ?", [$startDate])
-                  ->whereRaw("STR_TO_DATE(CONCAT(annee, '-', LPAD(mois, 2, '0'), '-01'), '%Y-%m-%d') <= ?", [$endDate]);
-            })
+            ->whereRaw('(annee * 100 + mois) >= ?', [$startPeriod])
+            ->whereRaw('(annee * 100 + mois) <= ?', [$endPeriod])
             ->orderByRaw('annee ASC, mois ASC')
             ->get();
 
