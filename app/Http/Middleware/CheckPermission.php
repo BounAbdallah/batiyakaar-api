@@ -35,6 +35,11 @@ class CheckPermission
             return $next($request);
         }
 
+        // Locataires and bailleurs access only their own data — controllers handle the filtering
+        if (in_array($user->user_type, ['locataire', 'bailleur'])) {
+            return $next($request);
+        }
+
         // Check team member permissions
         $permissions = $user->permissions ?? [];
 
