@@ -7,7 +7,8 @@ use App\Models\User;
 use App\Models\Agence;
 use App\Models\Abonnement;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB; // Import DB facade
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Password;
 use App\Models\Locataire;
 use App\Models\Bailleur;
 use App\Models\PaiementLoyer;
@@ -218,17 +219,20 @@ class AdminController extends Controller
         if ($wasInactive && $user->actif && $user->user_type === 'agence') {
             try {
                 $agence = $user->agence;
-                $plan = $agence->abonnement?->plan;
 
-                if ($agence && $plan) {
-                    // Generate a temporary password (you might want to store this or use a password reset link instead)
-                    $tempPassword = \Str::random(12);
+                if ($agence) {
+                    $plan = $agence->abonnement?->plan;
+
+                    // Generate a password reset token so the user can set their own password
+                    $token = \Illuminate\Support\Facades\Password::createToken($user);
+                    $resetUrl = config('app.frontend_url', 'https://immo.noorwebservices.com')
+                        . '/reset-password?token=' . $token . '&email=' . urlencode($user->email);
 
                     \Illuminate\Support\Facades\Mail::send('emails.account-activated', [
                         'agence' => $agence,
                         'user' => $user,
                         'plan' => $plan,
-                        'password' => $tempPassword
+                        'resetUrl' => $resetUrl,
                     ], function ($message) use ($user, $agence) {
                         $message->to($user->email, $agence->raison_sociale)
                             ->subject('Votre compte Noor Immo est activé !');

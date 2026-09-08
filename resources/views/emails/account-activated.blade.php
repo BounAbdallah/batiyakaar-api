@@ -23,12 +23,11 @@
         <p>Excellente nouvelle ! Votre compte Noor Immo a été activé avec succès par notre équipe.</p>
 
         <div style="background-color: #f3f4f6; padding: 15px; border-radius: 8px; margin: 20px 0;">
-            <p style="margin-bottom: 10px;"><strong>🔑 Vos identifiants de connexion :</strong></p>
+            <p style="margin-bottom: 10px;"><strong>🔑 Votre identifiant de connexion :</strong></p>
             <p><strong>Email :</strong> {{ $user->email }}</p>
-            <p><strong>Mot de passe :</strong> <code
-                    style="background-color: #e5e7eb; padding: 2px 6px; border-radius: 4px;">{{ $password }}</code></p>
         </div>
 
+        @if($plan)
         <div style="background-color: #dbeafe; padding: 15px; border-radius: 8px; margin: 20px 0;">
             <p style="margin-bottom: 10px;"><strong>📦 Votre plan :</strong></p>
             <p><strong>{{ $plan->nom }}</strong></p>
@@ -38,6 +37,7 @@
                 {{ $plan->limite_utilisateurs === -1 ? 'Utilisateurs illimités' : $plan->limite_utilisateurs . ' utilisateurs' }}
             </p>
         </div>
+        @endif
 
         <p><strong>Vous pouvez maintenant :</strong></p>
         <ul>
@@ -50,16 +50,15 @@
         </ul>
 
         <p style="text-align: center; margin: 30px 0;">
-            <a href="{{ config('app.frontend_url', 'https://immo.noorwebservices.com') }}/login"
+            <a href="{{ $resetUrl }}"
                 style="display: inline-block; background-color: #2563eb; color: white; padding: 15px 30px; text-decoration: none; border-radius: 5px; font-weight: bold; font-size: 16px;">
-                🚀 Accéder à mon espace
+                🔑 Définir mon mot de passe
             </a>
         </p>
 
         <div style="background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 12px; margin: 20px 0;">
             <p style="margin: 0; color: #92400e;">
-                <strong>⚠️ Sécurité :</strong> Pour votre sécurité, nous vous recommandons fortement de changer votre
-                mot de passe lors de votre première connexion.
+                <strong>⚠️ Ce lien expire dans 60 minutes.</strong> Cliquez dessus pour définir votre mot de passe et accéder à votre espace.
             </p>
         </div>
 

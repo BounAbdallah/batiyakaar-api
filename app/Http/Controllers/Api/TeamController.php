@@ -99,13 +99,16 @@ class TeamController extends Controller
         ]);
 
         // Send invitation email
-        Mail::to($user)->send(new TeamInvitation($user, $password, $manager));
+        try {
+            Mail::to($user)->send(new TeamInvitation($user, $password, $manager));
+        } catch (\Exception $e) {
+            \Log::error('Failed to send team invitation email: ' . $e->getMessage());
+        }
 
         return response()->json([
             'success' => true,
             'message' => 'Membre invité avec succès',
             'data' => $user,
-            'password_temp' => $password // For dev/demo only, strictly should be email only
         ], 201);
     }
 
