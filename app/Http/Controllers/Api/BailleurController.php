@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Agence;
 use App\Models\Bailleur;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -19,21 +20,17 @@ class BailleurController extends Controller
         $user = \Illuminate\Support\Facades\Auth::user();
         $query = Bailleur::with('user')->whereHas('user');
 
-        // If Agency, only show Bailleurs who have properties managed by this agency
+        // If Agency, only show Bailleurs that belong to this agency
         if ($user->user_type === 'agence') {
             $agenceId = $user->agence ? $user->agence->id : $user->agence_id;
-            $query->whereHas('biens', function ($q) use ($agenceId) {
-                $q->where('agence_id', $agenceId);
-            });
+            $query->where('agence_id', $agenceId);
         }
 
         // Global Stats for the Dashboard
         $stats = [];
         if ($user->user_type === 'agence') {
             $agenceId = $user->agence ? $user->agence->id : $user->agence_id;
-            $stats['total_bailleurs'] = Bailleur::whereHas('biens', function ($q) use ($agenceId) {
-                $q->where('agence_id', $agenceId);
-            })->count();
+            $stats['total_bailleurs'] = Bailleur::where('agence_id', $agenceId)->count();
         }
 
         if ($request->has('search')) {
@@ -67,10 +64,7 @@ class BailleurController extends Controller
         if ($user->user_type === 'agence') {
             $agenceId = $user->agence ? $user->agence->id : $user->agence_id;
 
-            // Use the agenceId already determined above
-            $stats['total_bailleurs'] = Bailleur::whereHas('biens', function ($q) use ($agenceId) {
-                $q->where('agence_id', $agenceId);
-            })->count();
+            $stats['total_bailleurs'] = Bailleur::where('agence_id', $agenceId)->count();
 
             // Total Biens for this agency
             $stats['total_biens'] = \App\Models\Bien::where('agence_id', $agenceId)->count();
@@ -145,8 +139,12 @@ class BailleurController extends Controller
             $cniVersoPath = $request->file('cni_verso')->store('cni/bailleurs', 'public');
         }
 
+        $authUser = $request->user();
+        $agence = $authUser->agence ?? Agence::find($authUser->agence_id);
+
         $bailleur = Bailleur::create([
             'user_id' => $user->id,
+            'agence_id' => $agence?->id,
             'pays' => $validated['pays'],
             'adresse_diaspora' => $validated['adresse_diaspora'] ?? null,
             'numero_cni' => $validated['numero_cni'] ?? null,
@@ -157,8 +155,6 @@ class BailleurController extends Controller
         ]);
 
         // Check if agency plan allows landlord access and send email
-        $authUser = $request->user();
-        $agence = $authUser->agence ?? \App\Models\Agence::find($authUser->agence_id);
         $emailSent = false;
 
         if ($agence) {

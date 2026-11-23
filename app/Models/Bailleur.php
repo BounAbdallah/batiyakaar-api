@@ -11,6 +11,7 @@ class Bailleur extends Model
 
     protected $fillable = [
         'user_id',
+        'agence_id',
         'pays',
         'adresse_diaspora',
         'numero_cni',
@@ -24,6 +25,11 @@ class Bailleur extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function agence()
+    {
+        return $this->belongsTo(Agence::class);
     }
 
     public function projetsConstruction()
